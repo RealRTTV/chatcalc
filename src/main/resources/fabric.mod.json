@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "chatcalc",
+  "version": "${version}",
+
+  "name": "ChatCalc",
+  "description": "A simple mod that turns your chat into a calculator.",
+  "authors": [
+    "RTTV",
+	"Kokeria"
+  ],
+  "contact": {
+    "sources": "https://github.com/RealRTTV/chatcalc"
+  },
+
+  "license": "MPL-2.0",
+  "icon": "assets/chatcalc/icon.png",
+
+  "environment": "client",
+  "entrypoints": {},
+  "mixins": [
+    "chatcalc.mixins.json"
+  ],
+
+  "depends": {
+    "minecraft": "*",
+    "java": ">=17"
+  }
+}
