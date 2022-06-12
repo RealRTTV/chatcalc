@@ -54,7 +54,7 @@ public class MathEngine {
                 continue;
             }
 
-            sb.append(c);
+            sb.append(c); // if something is not a member of another type, it just assumes its an unknown function
             currentType = FunctionToken.class;
         }
 
@@ -96,7 +96,7 @@ public class MathEngine {
                 }
             } else if (token instanceof FunctionToken functionToken) {
                 double input = eval(tokens.subList(i + 1, tokens.size()), abs);
-                double num = functionToken.func.charAt(3) == 95 ? functionToken.log(Double.parseDouble(functionToken.func.substring(4)), input) : functionToken.apply(input);
+                double num = functionToken.func.length() > 3 && functionToken.func.charAt(3) == 95 ? functionToken.log(Double.parseDouble(functionToken.func.substring(4)), input) : functionToken.apply(input);
                 tokens.set(i, new NumberToken(num));
             } else if (token instanceof AbsToken absToken) {
                 if (abs) {

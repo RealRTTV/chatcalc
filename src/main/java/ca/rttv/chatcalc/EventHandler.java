@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,9 +16,10 @@ import java.text.DecimalFormat;
 import java.util.stream.Collectors;
 
 public class EventHandler {
+    public static final Logger LOGGER = LogUtils.getLogger();
     public static JsonObject json;
-    public static File configFile;
-    public static Gson GSON;
+    public static final File configFile;
+    public static final Gson GSON;
 
     private static DecimalFormat getDecimalFormat() {
         return new DecimalFormat(json.get("decimalFormat").getAsString());
@@ -48,6 +51,7 @@ public class EventHandler {
             String solStr = EventHandler.getDecimalFormat().format(solution);
             return ChatHelper.replaceWord(field, solStr);
         } catch (Exception e) {
+            LOGGER.warn("Error parsing equation; " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return false;
         }
     }
@@ -65,6 +69,7 @@ public class EventHandler {
             String solStr = EventHandler.getDecimalFormat().format(solution);
             return ChatHelper.addWordAfterIndex(field, ChatHelper.getEndOfWord(originalText, cursor), solStr);
         } catch (Exception e) {
+            LOGGER.warn("Error parsing equation; " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return false;
         }
     }
