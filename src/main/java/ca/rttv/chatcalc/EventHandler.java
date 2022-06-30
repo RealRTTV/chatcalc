@@ -41,7 +41,7 @@ public class EventHandler {
     }
 
     private static DecimalFormat getDecimalFormat() {
-        return new DecimalFormat(json.get("decimalFormat").getAsString());
+        return new DecimalFormat(json.get("decimal_format").getAsString());
     }
 
     public static double convertIfRadians(double value) {
@@ -124,6 +124,6 @@ public class EventHandler {
     }
 
     public static boolean debugTokens() {
-        return Boolean.parseBoolean(json.get("debugTokens").getAsString());
+        return Boolean.parseBoolean(json.get("debug_tokens").getAsString());
     }
 }
