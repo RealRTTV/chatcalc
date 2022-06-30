@@ -13,7 +13,7 @@ public class ChatHelper {
         int start = ChatHelper.getStartOfWord(input, cursor);
         int end = ChatHelper.getEndOfWord(input, cursor);
         String output = input.substring(0, start) + replacement + input.substring(end);
-        if (output.length() > 256) {
+        if (output.length() > 256 || input.substring(start, end).equals(replacement)) {
             return false;
         }
         field.setText(output);

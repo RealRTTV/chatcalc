@@ -1,0 +1,5 @@
+{
+  "chatcalc.decimal_format.description": "The decimal format used by the mod to display numbers; ex: #,##0.## has commas, numbers smaller than 0 have a leading 0 (.3 into 0.3), and stores two decimal places.\nMore information can be found here: https://docs.oracle.com/javase/tutorial/i18n/format/decimalFormat.html\nUsing an invalid format *will* crash the game",
+  "chatcalc.radians.description": "A toggle to convert numbers from degrees to radians before calculating in trig equations such as sin(), cos(), and tan()",
+  "chatcalc.debug_tokens.description": "A debug option to display all of the parsed tokens in chat and console before they get evaluated"
+}

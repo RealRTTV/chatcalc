@@ -1,5 +1,9 @@
 package ca.rttv.chatcalc.tokens;
 
+import ca.rttv.chatcalc.EventHandler;
+import net.minecraft.text.LiteralTextContent;
+import net.minecraft.text.TextContent;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,18 +14,18 @@ public final class FunctionToken implements Token {
         functions = new HashMap<>();
         functions.put("sqrt", Math::sqrt);
         functions.put("cbrt", Math::cbrt);
-        functions.put("sin", Math::sin);
-        functions.put("asin", Math::asin);
-        functions.put("arcsin", Math::asin);
-        functions.put("cos", Math::cos);
-        functions.put("acos", Math::acos);
-        functions.put("arccos", Math::acos);
-        functions.put("tan", Math::tan);
-        functions.put("atan", Math::atan);
-        functions.put("arctan", Math::atan);
-        functions.put("sec", val -> 1 / Math.cos(val));
-        functions.put("csc", val -> 1 / Math.sin(val));
-        functions.put("cot", val -> 1 / Math.tan(val));
+        functions.put("sin", val -> Math.sin(EventHandler.convertIfRadians(val)));
+        functions.put("asin", val -> Math.asin(EventHandler.convertIfRadians(val)));
+        functions.put("arcsin", val -> Math.asin(EventHandler.convertIfRadians(val)));
+        functions.put("cos", val -> Math.cos(EventHandler.convertIfRadians(val)));
+        functions.put("acos", val -> Math.acos(EventHandler.convertIfRadians(val)));
+        functions.put("arccos", val -> Math.acos(EventHandler.convertIfRadians(val)));
+        functions.put("tan", val -> Math.tan(EventHandler.convertIfRadians(val)));
+        functions.put("atan", val -> Math.atan(EventHandler.convertIfRadians(val)));
+        functions.put("arctan", val -> Math.atan(EventHandler.convertIfRadians(val)));
+        functions.put("sec", val -> 1 / Math.cos(EventHandler.convertIfRadians(val)));
+        functions.put("csc", val -> 1 / Math.sin(EventHandler.convertIfRadians(val)));
+        functions.put("cot", val -> 1 / Math.tan(EventHandler.convertIfRadians(val)));
         functions.put("floor", Math::floor);
         functions.put("ceil", Math::ceil);
         functions.put("abs", Math::abs);
@@ -31,8 +35,13 @@ public final class FunctionToken implements Token {
 
     public final String func;
 
+    @Override
+    public String toString() {
+        return "\033[0;33m" + func;
+    }
+
     public FunctionToken(String value) {
-        this.func = value;
+        func = value;
     }
 
     public double apply(double value) {
@@ -41,5 +50,10 @@ public final class FunctionToken implements Token {
 
     public double log(double base, double value) {
         return Math.log10(value) / Math.log10(base);
+    }
+
+    @Override
+    public TextContent getText() {
+        return new LiteralTextContent("§e" + func);
     }
 }

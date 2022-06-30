@@ -1,3 +1,7 @@
 package ca.rttv.chatcalc.tokens;
 
-public interface Token { }
+import net.minecraft.text.TextContent;
+
+public interface Token {
+    TextContent getText();
+}

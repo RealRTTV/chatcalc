@@ -5,7 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -16,16 +18,38 @@ import java.text.DecimalFormat;
 import java.util.stream.Collectors;
 
 public class EventHandler {
-    public static final Logger LOGGER = LogUtils.getLogger();
-    public static JsonObject json;
-    public static final File configFile;
+    public static final Logger LOGGER;
+    public static final JsonObject json;
     public static final Gson GSON;
+    public static final File configFile;
+
+    static {
+        configFile = new File(".", "config/chatcalc.json");
+        GSON = new GsonBuilder().setPrettyPrinting().create();
+        json = new JsonObject();
+        LOGGER = LogUtils.getLogger();
+        File dir = new File(".", "config");
+        if ((dir.exists() && dir.isDirectory() || dir.mkdirs()) && !configFile.exists()) {
+            json.addProperty("decimal_format", "#,##0.##");
+            json.addProperty("radians", "false");
+            json.addProperty("debug_tokens", "false");
+            EventHandler.refreshJson();
+        }
+        if (configFile.exists() && configFile.isFile() && configFile.canRead()) {
+            EventHandler.readJson();
+        }
+    }
 
     private static DecimalFormat getDecimalFormat() {
         return new DecimalFormat(json.get("decimalFormat").getAsString());
     }
 
+    public static double convertIfRadians(double value) {
+        return Boolean.parseBoolean(json.get("radians").getAsString()) ? Math.toRadians(value) : value;
+    }
+
     public static boolean runExpression(TextFieldWidget field) {
+        final MinecraftClient client = MinecraftClient.getInstance();
         String originalText = field.getText();
         String text = originalText.substring(0, field.getCursor());
         String[] split = text.split("=");
@@ -37,6 +61,9 @@ public class EventHandler {
             }
         } else if (json.has(split[0])) {
             return ChatHelper.replaceWord(field, json.get(split[0]).getAsString());
+        } else if (json.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
+            client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
+            return false;
         }
 
         return EventHandler.runExprReplace(field) || EventHandler.runExprAdd(field);
@@ -47,6 +74,9 @@ public class EventHandler {
         int cursor = field.getCursor();
         try {
             String word = ChatHelper.getWord(originalText, cursor);
+            if (word.endsWith("=")) {
+                return false;
+            }
             double solution = MathEngine.eval(word);
             String solStr = EventHandler.getDecimalFormat().format(solution);
             return ChatHelper.replaceWord(field, solStr);
@@ -79,29 +109,21 @@ public class EventHandler {
             FileWriter writer = new FileWriter(configFile);
             writer.write(GSON.toJson(json));
             writer.close();
-        } catch (Exception ignored) {}
-    }
-
-    static {
-        configFile = new File(".", "config/chatcalc.json");
-        GSON = new GsonBuilder().setPrettyPrinting().create();
-        File dir = new File(".", "config");
-        if ((dir.exists() && dir.isDirectory() || dir.mkdirs()) && !configFile.exists()) {
-            JsonObject json = new JsonObject();
-            json.addProperty("decimalFormat", "#,##0.##");
-            EventHandler.json = json;
-            EventHandler.refreshJson();
-        }
-        if (configFile.exists() && configFile.isFile() && configFile.canRead()) {
-            EventHandler.readJson();
+        } catch (Exception ignored) {
         }
     }
 
     public static void readJson() {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(configFile));
-            EventHandler.json = JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject();
+            json.entrySet().forEach(entry -> json.remove(entry.getKey()));
+            JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
             reader.close();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
+    }
+
+    public static boolean debugTokens() {
+        return Boolean.parseBoolean(json.get("debugTokens").getAsString());
     }
 }

@@ -10,13 +10,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChatScreen.class)
-public class ChatScreenMixin {
-	@Shadow protected TextFieldWidget chatField;
+abstract class ChatScreenMixin {
+    @Shadow
+    protected TextFieldWidget chatField;
 
-	@Inject(at = @At("HEAD"), method = "keyPressed(III)Z", cancellable = true)
-	private void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-		if (keyCode == 258 && EventHandler.runExpression(this.chatField)) {
-			cir.setReturnValue(true);
-		}
-	}
+    @Inject(at = @At("HEAD"), method = "keyPressed(III)Z", cancellable = true)
+    private void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+        if (keyCode == 258 && EventHandler.runExpression(chatField)) {
+            cir.setReturnValue(true);
+        }
+    }
 }
