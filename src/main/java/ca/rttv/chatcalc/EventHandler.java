@@ -61,12 +61,17 @@ public class EventHandler {
             }
         } else if (json.has(split[0])) {
             return ChatHelper.replaceWord(field, json.get(split[0]).getAsString());
-        } else if (json.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
+        } else if (split[0].length() > 0 && json.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
             client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
             return false;
         }
 
-        return EventHandler.runExprReplace(field) || EventHandler.runExprAdd(field);
+        try {
+            Double.parseDouble(ChatHelper.getWord(field.getText(), field.getCursor()));
+            return false;
+        } catch (NumberFormatException e) {
+            return EventHandler.runExprReplace(field) || EventHandler.runExprAdd(field);
+        }
     }
 
     private static boolean runExprReplace(TextFieldWidget field) {
@@ -74,14 +79,13 @@ public class EventHandler {
         int cursor = field.getCursor();
         try {
             String word = ChatHelper.getWord(originalText, cursor);
-            if (word.endsWith("=")) {
+            if (word.endsWith("=") || word.length() == 0) {
                 return false;
             }
             double solution = MathEngine.eval(word);
             String solStr = EventHandler.getDecimalFormat().format(solution);
             return ChatHelper.replaceWord(field, solStr);
         } catch (Exception e) {
-            LOGGER.warn("Error parsing equation; " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return false;
         }
     }
@@ -99,7 +103,6 @@ public class EventHandler {
             String solStr = EventHandler.getDecimalFormat().format(solution);
             return ChatHelper.addWordAfterIndex(field, ChatHelper.getEndOfWord(originalText, cursor), solStr);
         } catch (Exception e) {
-            LOGGER.warn("Error parsing equation; " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return false;
         }
     }
