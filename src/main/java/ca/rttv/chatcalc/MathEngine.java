@@ -5,7 +5,6 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 
@@ -13,17 +12,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class MathEngine {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public static double eval(String input) {
-        input = input.toLowerCase().replaceAll("pi", "3.141592653589793").replaceAll("\\*\\*", "^").replaceAll("(?!c)e(?!il)", "2.718281828459045").replaceAll(",(?! )", "");
+        MinecraftClient client = MinecraftClient.getInstance();
+        input = input.toLowerCase()
+                     .replaceAll("pi", "3.141592653589793")
+                     .replaceAll("\\*\\*", "^").replaceAll("(?!c)e(?!il)", "2.718281828459045")
+                     .replaceAll(",(?! )", "");
+        if (client.player != null) {
+            input = input.replaceAll("x", String.valueOf(client.player.getX()))
+                         .replaceAll("y", String.valueOf(client.player.getY()))
+                         .replaceAll("z", String.valueOf(client.player.getZ()));
+        }
         List<Token> tokens = new ArrayList<>(input.length()); // array of custom objects which do different things each
         Optional<Class<? extends Token>> currentType = Optional.empty();
         StringBuilder sb = new StringBuilder();
-        MinecraftClient client = MinecraftClient.getInstance();
 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
