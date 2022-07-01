@@ -102,7 +102,11 @@ public class MathEngine {
                     return ((NumberToken) tokens.get(0)).val();
                 }
 
-                eval(tokens.subList(i, tokens.size()), abs);
+
+                double result = eval(tokens.subList(i, tokens.size()), abs);
+                if (i > 0 && tokens.get(i - 1) instanceof NumberToken numberToken) {
+                    return numberToken.val() * result;
+                }
             } else if (token instanceof OperatorToken operatorToken) {
                 Token before = i == 0 ? null : tokens.get(i - 1);
                 if (before instanceof NumberToken) {
