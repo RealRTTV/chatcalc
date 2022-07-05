@@ -115,14 +115,13 @@ public class MathEngine {
                 }
             } else if (token instanceof OperatorToken operatorToken) {
                 Token before = i == 0 ? null : tokens.get(i - 1);
+                double next = tokens.get(i + 1) instanceof NumberToken numberToken ? numberToken.val() : eval(tokens.subList(i + 1, tokens.size()), abs);
                 if (before instanceof NumberToken) {
                     double prev = ((NumberToken) before).val();
-                    double next = eval(tokens.subList(i + 1, tokens.size()), abs);
                     tokens.set(i - 1, new NumberToken(operatorToken.apply(prev, next)));
                     tokens.remove(i);
                     tokens.remove(i);
                 } else if (operatorToken.val == 45) {
-                    double next = tokens.get(i + 1) instanceof NumberToken numberToken ? numberToken.val() : eval(tokens.subList(i + 1, tokens.size()), abs);
                     tokens.set(i, new NumberToken(-next));
                     tokens.remove(i + 1);
                 }
