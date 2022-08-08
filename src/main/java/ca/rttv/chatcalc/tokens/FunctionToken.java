@@ -6,9 +6,10 @@ import net.minecraft.text.TextContent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.DoubleUnaryOperator;
 
 public final class FunctionToken implements Token {
-    private static final Map<String, DoubleToDoubleFunction> functions;
+    private static final Map<String, DoubleUnaryOperator> functions;
 
     static {
         functions = new HashMap<>();
@@ -45,10 +46,13 @@ public final class FunctionToken implements Token {
     }
 
     public double apply(double value) {
-        return functions.get(func).apply(value);
+        if (func.startsWith("log_")) {
+            return log(Double.parseDouble(func.substring(4)), value);
+        }
+        return functions.get(func).applyAsDouble(value);
     }
 
-    public double log(double base, double value) {
+    public static double log(double base, double value) {
         return Math.log10(value) / Math.log10(base);
     }
 

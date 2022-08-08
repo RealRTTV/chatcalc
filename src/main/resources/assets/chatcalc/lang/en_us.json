@@ -1,5 +1,8 @@
 {
   "chatcalc.decimal_format.description": "The decimal format used by the mod to display numbers; ex: #,##0.## has commas, numbers smaller than 0 have a leading 0 (.3 into 0.3), and stores two decimal places.\nMore information can be found here: https://docs.oracle.com/javase/tutorial/i18n/format/decimalFormat.html\nUsing an invalid format *will* crash the game",
   "chatcalc.radians.description": "A toggle to convert numbers from degrees to radians before calculating in trig equations such as sin(), cos(), and tan()",
-  "chatcalc.debug_tokens.description": "A debug option to display all of the parsed tokens in chat and console before they get evaluated"
+  "chatcalc.debug_tokens.description": "A debug option to display all of the parsed tokens in chat and console before they get evaluated",
+  "chatcalc.e.description": "Toggles the parsing of the e constant (euler's number), aka 2.718281828459045",
+  "chatcalc.log_exceptions.description": "Logs exceptions to your minecraft logs. The reason this is a toggle is because when pressing tab for non chatcalc purposes, it throws an error",
+  "chatcalc.copy_type.description": "An option either copy to your clipboard (value: clipboard) or add it to your chat history (value: chat_history) (the thing when pressing the up arrow and down arrow), or to not save to anywhere (none)"
 }

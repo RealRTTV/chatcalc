@@ -1,7 +1,10 @@
 package ca.rttv.chatcalc.tokens;
 
+import ca.rttv.chatcalc.MathEngine;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.TextContent;
+
+import java.util.List;
 
 public final class OperatorToken implements Token {
     public final char val;
@@ -30,5 +33,24 @@ public final class OperatorToken implements Token {
     @Override
     public TextContent getText() {
         return new LiteralTextContent("§c" + val);
+    }
+
+    public int eval(List<Token> tokens, int i) {
+        if (tokens.get(i - 1) instanceof BracketToken bracketToken) {
+            tokens.remove(--i);
+            int start = bracketToken.getStart(tokens, i);
+            MathEngine.eval(tokens.subList(start, i), false);
+        }
+        double left = tokens.get(i - 1) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
+        if (tokens.get(i + 1) instanceof BracketToken) {
+            tokens.remove(--i);
+            MathEngine.eval(tokens.subList(i, tokens.size()), false);
+        }
+        double right = tokens.get(i + 1) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
+        tokens.set(i, new NumberToken(apply(left, right)));
+        tokens.remove(--i);
+        tokens.remove(i + 1);
+        i--;
+        return i;
     }
 }

@@ -33,6 +33,9 @@ public class EventHandler {
             json.addProperty("decimal_format", "#,##0.##");
             json.addProperty("radians", "false");
             json.addProperty("debug_tokens", "false");
+            json.addProperty("euler", "false");
+            json.addProperty("log_exceptions", "false");
+            json.addProperty("copy_type", "none");
             EventHandler.refreshJson();
         }
         if (configFile.exists() && configFile.isFile() && configFile.canRead()) {
@@ -41,11 +44,15 @@ public class EventHandler {
     }
 
     private static DecimalFormat getDecimalFormat() {
-        return new DecimalFormat(json.get("decimal_format").getAsString());
+        return json.has("decimal_format") ? new DecimalFormat(json.get("decimal_format").getAsString()) : new DecimalFormat("#,##0.##");
     }
 
     public static double convertIfRadians(double value) {
-        return Boolean.parseBoolean(json.get("radians").getAsString()) ? Math.toRadians(value) : value;
+        return json.has("radians") && Boolean.parseBoolean(json.get("radians").getAsString()) ? Math.toRadians(value) : value;
+    }
+
+    public static boolean logExceptions() {
+        return json.has("log_exceptions") && Boolean.parseBoolean(json.get("log_exceptions").getAsString());
     }
 
     public static boolean runExpression(TextFieldWidget field) {
@@ -84,8 +91,13 @@ public class EventHandler {
             }
             double solution = MathEngine.eval(word);
             String solStr = EventHandler.getDecimalFormat().format(solution);
+            saveToChatHud(originalText);
+            saveToClipboard(originalText);
             return ChatHelper.replaceWord(field, solStr);
         } catch (Exception e) {
+            if (logExceptions()) {
+                LOGGER.error("ChatCalc Parse Error: ", e);
+            }
             return false;
         }
     }
@@ -101,8 +113,13 @@ public class EventHandler {
             word = word.substring(0, word.length() - 1);
             double solution = MathEngine.eval(word);
             String solStr = EventHandler.getDecimalFormat().format(solution);
+            saveToChatHud(originalText);
+            saveToClipboard(originalText);
             return ChatHelper.addWordAfterIndex(field, ChatHelper.getEndOfWord(originalText, cursor), solStr);
         } catch (Exception e) {
+            if (logExceptions()) {
+                LOGGER.error("ChatCalc Parse Error: ", e);
+            }
             return false;
         }
     }
@@ -112,8 +129,7 @@ public class EventHandler {
             FileWriter writer = new FileWriter(configFile);
             writer.write(GSON.toJson(json));
             writer.close();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { }
     }
 
     public static void readJson() {
@@ -122,11 +138,28 @@ public class EventHandler {
             json.entrySet().forEach(entry -> json.remove(entry.getKey()));
             JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
             reader.close();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { }
     }
 
     public static boolean debugTokens() {
-        return Boolean.parseBoolean(json.get("debug_tokens").getAsString());
+        return json.has("debug_tokens") && Boolean.parseBoolean(json.get("debug_tokens").getAsString());
+    }
+
+    public static boolean euler() {
+        return json.has("euler") && Boolean.parseBoolean(json.get("euler").getAsString());
+    }
+
+    public static void saveToChatHud(String input) {
+        if (json.has("copy_type") && json.get("copy_type").getAsString().equalsIgnoreCase("chat_history")) {
+            final MinecraftClient client = MinecraftClient.getInstance();
+            client.inGameHud.getChatHud().addToMessageHistory(input);
+        }
+    }
+
+    public static void saveToClipboard(String input) {
+        if (json.has("copy_type") && json.get("copy_type").getAsString().equalsIgnoreCase("clipboard")) {
+            final MinecraftClient client = MinecraftClient.getInstance();
+            client.keyboard.setClipboard(input);
+        }
     }
 }
