@@ -1,9 +1,10 @@
 package ca.rttv.chatcalc.tokens;
 
 import net.minecraft.text.LiteralTextContent;
-import net.minecraft.text.TextContent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
-public class AbsToken implements Token {
+public final class AbsToken implements Token {
     public AbsToken() { }
 
     public double apply(double value) {
@@ -12,11 +13,11 @@ public class AbsToken implements Token {
 
     @Override
     public String toString() {
-        return "\033[0;35m|";
+        return "|";
     }
 
     @Override
-    public TextContent getText() {
-        return new LiteralTextContent("§d|");
+    public Text toText() {
+        return MutableText.of(new LiteralTextContent("§d|"));
     }
 }

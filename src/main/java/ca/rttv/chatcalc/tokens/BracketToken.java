@@ -1,7 +1,8 @@
 package ca.rttv.chatcalc.tokens;
 
 import net.minecraft.text.LiteralTextContent;
-import net.minecraft.text.TextContent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ public final class BracketToken implements Token {
 
     @Override
     public String toString() {
-        return "\033[0;32m" + (isOpen ? '(' : ')');
+        return isOpen ? "(" : ")";
     }
 
     public BracketToken(char value) {
@@ -18,8 +19,8 @@ public final class BracketToken implements Token {
     }
 
     @Override
-    public TextContent getText() {
-        return new LiteralTextContent("§a" + (isOpen ? '(' : ')'));
+    public Text toText() {
+        return MutableText.of(new LiteralTextContent("§a" + (isOpen ? '(' : ')')));
     }
 
     public int getStart(List<Token> tokens, int index) {

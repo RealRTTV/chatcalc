@@ -1,6 +1,6 @@
 package ca.rttv.chatcalc.mixin;
 
-import ca.rttv.chatcalc.EventHandler;
+import ca.rttv.chatcalc.ChatCalc;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +16,7 @@ abstract class ChatScreenMixin {
 
     @Inject(at = @At("HEAD"), method = "keyPressed(III)Z", cancellable = true)
     private void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (keyCode == 258 && EventHandler.runExpression(chatField)) {
+        if (keyCode == 258 && ChatCalc.tryParse(chatField)) {
             cir.setReturnValue(true);
         }
     }

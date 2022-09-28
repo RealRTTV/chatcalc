@@ -1,9 +1,10 @@
 package ca.rttv.chatcalc.tokens;
 
 import net.minecraft.text.LiteralTextContent;
-import net.minecraft.text.TextContent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
-public class NumberToken implements Token {
+public final class NumberToken implements Token {
     public final double val;
 
     public NumberToken(double value) {
@@ -12,11 +13,11 @@ public class NumberToken implements Token {
 
     @Override
     public String toString() {
-        return "\033[0m" + val;
+        return String.valueOf(val);
     }
 
     @Override
-    public TextContent getText() {
-        return new LiteralTextContent("§f" + val);
+    public Text toText() {
+        return MutableText.of(new LiteralTextContent("§f" + val));
     }
 }
