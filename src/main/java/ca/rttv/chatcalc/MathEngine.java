@@ -51,14 +51,6 @@ public class MathEngine {
         if (Config.euler()) {
             input = input.replaceAll("(?!c)e(?!il)", "2.718281828459045");
         }
-        double x = Double.NaN;
-        double y = Double.NaN;
-        double z = Double.NaN;
-        if (client.player != null) {
-            x = client.player.getX();
-            y = client.player.getY();
-            z = client.player.getZ();
-        }
         List<Token> tokens = new ArrayList<>(input.length() >> 1); // just a guess
         {
             Optional<Class<? extends Token>> currentType = Optional.empty();
@@ -101,20 +93,6 @@ public class MathEngine {
                     sb = new StringBuilder().append(c); // this resets it after the number token has been done
                     currentType = Optional.of(AbsToken.class);
                     makeToken(currentType, sb.toString()).ifPresent(tokens::add);
-                    sb = new StringBuilder();
-                    continue;
-                }
-
-                if (isPos(c) && !currentType.equals(Optional.of(FunctionToken.class))) {
-                    if (sb.length() > 0) { // this segment on every one of these is to finish a number token
-                        makeToken(currentType, sb.toString()).ifPresent(tokens::add);
-                    }
-                    tokens.add(new NumberToken(switch (c) {
-                        case 'x' -> x;
-                        case 'y' -> y;
-                        case 'z' -> z;
-                        default -> Double.NaN;
-                    }));
                     sb = new StringBuilder();
                     continue;
                 }
@@ -194,6 +172,13 @@ public class MathEngine {
             } else if (token instanceof FunctionToken functionToken) { // function
                 if (variable.isPresent() && variable.get().getLeft().equals(functionToken.func)) { // since 'a' will be considered a function, I have to detect if it is, then convert it into a constant
                     tokens.set(i, new NumberToken(variable.get().getRight()));
+                } else if (functionToken.func.length() == 1 && isPos(functionToken.func.charAt(0))) {
+                    tokens.set(i, new NumberToken(switch (functionToken.func.charAt(0)) {
+                        case 'x' -> MinecraftClient.getInstance().player.getX();
+                        case 'y' -> MinecraftClient.getInstance().player.getY();
+                        case 'z' -> MinecraftClient.getInstance().player.getZ();
+                        default -> throw new NullPointerException();
+                    }));
                 } else {
                     //noinspection SuspiciousListRemoveInLoop -- checked
                     tokens.remove(i); // thyself
