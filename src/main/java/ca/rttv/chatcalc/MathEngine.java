@@ -34,7 +34,10 @@ public class MathEngine {
         } // print to console for debug
 
         simplify(tokens, false, Optional.empty());
-        return tokens.size() > 0 && tokens.get(0) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
+        if (tokens.size() > 0 && tokens.get(0) instanceof NumberToken numberToken) {
+            return numberToken.val;
+        }
+        throw new IndexOutOfBoundsException();
     }
     
     @Contract(value = "!null->!null", pure = true)
@@ -44,7 +47,7 @@ public class MathEngine {
                 .replace("pi", "3.141592653589793")
                 .replace("tau", "6.283185307179586")
                 .replace("**", "^")
-                .replaceAll(",(?! )", "");
+                .replaceAll(",", "");
         if (Config.euler()) {
             input = input.replaceAll("(?!c)e(?!il)", "2.718281828459045");
         }
