@@ -6,10 +6,7 @@ import com.google.gson.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Pair;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,13 +23,22 @@ public class Config {
         JSON = new JsonObject();
         File dir = new File(".", "config");
         if ((dir.exists() && dir.isDirectory() || dir.mkdirs()) && !CONFIG_FILE.exists()) {
-            JSON.addProperty("decimal_format", "#,##0.##");
-            JSON.addProperty("radians", "false");
-            JSON.addProperty("debug_tokens", "false");
-            JSON.addProperty("euler", "false");
-            JSON.addProperty("log_exceptions", "false");
-            JSON.addProperty("copy_type", "none");
-            refreshJson();
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                CONFIG_FILE.createNewFile();
+                FileWriter writer = new FileWriter(CONFIG_FILE);
+                writer.write("""
+                        {
+                            "decimal_format": "#,##0.##",
+                            "radians": "false",
+                            "debug_tokens": "false",
+                            "euler": "false",
+                            "log_exceptions": "false",
+                            "copy_type": "none"
+                        }
+                        """);
+                writer.close();
+            } catch (IOException ignored) {}
         }
         if (CONFIG_FILE.exists() && CONFIG_FILE.isFile() && CONFIG_FILE.canRead()) {
             readJson();
@@ -58,7 +64,7 @@ public class Config {
     public static void refreshJson() {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
-            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + x.getValue().getRight() + ")" + '=' + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + x.getValue().getRight() + ")=" + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
             writer.close();
         } catch (Exception ignored) { }
