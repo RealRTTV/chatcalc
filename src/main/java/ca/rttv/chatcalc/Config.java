@@ -61,7 +61,7 @@ public class Config {
     }
 
     public static double convertIfRadians(double value) {
-        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? Math.toRadians(value) : value;
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value); // sine takes in radians, so we have to do inverse, if we have radians, it'll convert, if we don't, we need to cancel out
     }
 
     public static boolean logExceptions() {

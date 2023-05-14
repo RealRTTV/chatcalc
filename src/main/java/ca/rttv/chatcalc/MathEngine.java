@@ -47,7 +47,7 @@ public class MathEngine {
                 .replace("tau", "6.283185307179586")
                 .replace("**", "^")
                 .replaceAll(",", "")
-                .replaceAll("", "2.718281828459045");
+                .replaceAll("e", "2.718281828459045");
         List<Token> tokens = new ArrayList<>(input.length() >> 1); // just a guess
         {
             Optional<Class<? extends Token>> currentType = Optional.empty();
@@ -180,12 +180,30 @@ public class MathEngine {
                 } else {
                     //noinspection SuspiciousListRemoveInLoop -- checked
                     tokens.remove(i); // thyself
+                    double exponent = 1.0;
+                    if (tokens.get(i) instanceof OperatorToken operatorToken && operatorToken.val == 94) {
+                        //noinspection SuspiciousListRemoveInLoop -- checked
+                        tokens.remove(i); // exponent operator
+                        if (tokens.get(i) instanceof NumberToken numberToken) {
+                            exponent = numberToken.val;
+                        } else if (tokens.get(i) instanceof BracketToken bracketToken) {
+                            if (!bracketToken.isOpen) {
+                                throw new IllegalArgumentException();
+                            } else {
+                                tokens.remove(i); // opening bracket for exponent
+                                simplify(tokens.subList(i, tokens.size()), false, variable);
+                                exponent = tokens.get(i) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
+                            }
+                        } else {
+                            throw new IllegalArgumentException();
+                        }
+                    }
                     //noinspection SuspiciousListRemoveInLoop -- checked
-                    tokens.remove(i); // opening bracket
+                    tokens.remove(i); // number
                     simplify(tokens.subList(i, tokens.size()), false, variable);
                     Token param = tokens.get(i);
                     double value = param instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
-                    double output = functionToken.apply(value);
+                    double output = Math.pow(functionToken.apply(value), exponent);
                     tokens.set(i, new NumberToken(output));
                 }
             }
@@ -237,6 +255,7 @@ public class MathEngine {
     @Contract(value = "_,!null->!null", pure = true)
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private static Optional<Token> makeToken(Optional<Class<? extends Token>> clazz, String param) {
+        System.out.println(param);
         return clazz.map(value -> switch (value.getName()) {
             case "ca.rttv.chatcalc.tokens.NumberToken" -> new NumberToken(Double.parseDouble(param));
             case "ca.rttv.chatcalc.tokens.OperatorToken" -> new OperatorToken(param.charAt(0));
