@@ -42,15 +42,12 @@ public class MathEngine {
     
     @Contract(value = "!null->!null", pure = true)
     public static List<Token> tokenize(String input) {
-        MinecraftClient client = MinecraftClient.getInstance();
         input = input.toLowerCase()
                 .replace("pi", "3.141592653589793")
                 .replace("tau", "6.283185307179586")
                 .replace("**", "^")
-                .replaceAll(",", "");
-        if (Config.euler()) {
-            input = input.replaceAll("(?!c)e(?!il)", "2.718281828459045");
-        }
+                .replaceAll(",", "")
+                .replaceAll("", "2.718281828459045");
         List<Token> tokens = new ArrayList<>(input.length() >> 1); // just a guess
         {
             Optional<Class<? extends Token>> currentType = Optional.empty();
@@ -147,6 +144,7 @@ public class MathEngine {
 
     @Contract(value = "_,_,_->_", mutates = "param1")
     public static void simplify(List<Token> tokens, boolean abs, Optional<Pair<String, Double>> variable) {
+        final MinecraftClient client = MinecraftClient.getInstance();
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
             if (token instanceof BracketToken bracketToken) {
@@ -172,11 +170,11 @@ public class MathEngine {
             } else if (token instanceof FunctionToken functionToken) { // function
                 if (variable.isPresent() && variable.get().getLeft().equals(functionToken.func)) { // since 'a' will be considered a function, I have to detect if it is, then convert it into a constant
                     tokens.set(i, new NumberToken(variable.get().getRight()));
-                } else if (functionToken.func.length() == 1 && isPos(functionToken.func.charAt(0))) {
+                } else if (functionToken.func.length() == 1 && isPos(functionToken.func.charAt(0)) && client.player != null) {
                     tokens.set(i, new NumberToken(switch (functionToken.func.charAt(0)) {
-                        case 'x' -> MinecraftClient.getInstance().player.getX();
-                        case 'y' -> MinecraftClient.getInstance().player.getY();
-                        case 'z' -> MinecraftClient.getInstance().player.getZ();
+                        case 'x' -> client.player.getX();
+                        case 'y' -> client.player.getY();
+                        case 'z' -> client.player.getZ();
                         default -> throw new NullPointerException();
                     }));
                 } else {

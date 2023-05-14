@@ -2,6 +2,7 @@ package ca.rttv.chatcalc;
 
 import ca.rttv.chatcalc.tokens.NumberToken;
 import ca.rttv.chatcalc.tokens.Token;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Pair;
@@ -16,8 +17,17 @@ public class Config {
     public static final Gson GSON;
     public static final File CONFIG_FILE;
     public static final Map<String, Pair<List<Token>, String>> FUNCTIONS;
+    public static final ImmutableMap<String, String> DEFAULTS;
 
     static {
+        DEFAULTS = ImmutableMap.<String, String>builder()
+                .put("decimal_format", "#,##0.##")
+                .put("radians", "false")
+                .put("debug_tokens", "false")
+                .put("log_exceptions", "false")
+                .put("copy_type", "none")
+                .put("calculate_last", "true")
+                .build();
         CONFIG_FILE = new File(".", "config/chatcalc.json");
         GSON = new GsonBuilder().setPrettyPrinting().create();
         JSON = new JsonObject();
@@ -27,38 +37,35 @@ public class Config {
                 //noinspection ResultOfMethodCallIgnored
                 CONFIG_FILE.createNewFile();
                 FileWriter writer = new FileWriter(CONFIG_FILE);
-                writer.write("""
-                        {
-                            "decimal_format": "#,##0.##",
-                            "radians": "false",
-                            "debug_tokens": "false",
-                            "euler": "false",
-                            "log_exceptions": "false",
-                            "copy_type": "none"
-                        }
-                        """);
+                writer.write("{\n");
+                for (Map.Entry<String, String> element : DEFAULTS.entrySet()) {
+                    writer.write(String.format("    \"%s\": \"%s\",\n", element.getKey(), element.getValue()));
+                }
+                writer.write("    \"functions\": []\n");
+                writer.write("}");
                 writer.close();
             } catch (IOException ignored) {}
         }
+        FUNCTIONS = new HashMap<>();
         if (CONFIG_FILE.exists() && CONFIG_FILE.isFile() && CONFIG_FILE.canRead()) {
             readJson();
         }
-        FUNCTIONS = new HashMap<>();
-        if (JSON.has("functions")) {
-            JSON.getAsJsonArray("functions").forEach(e -> FUNCTIONS.put(e.getAsString().split("\\(")[0], new Pair<>(MathEngine.tokenize(e.getAsString().split("=")[1]), e.getAsString().split("[()]")[1])));
-        }
+    }
+
+    public static boolean calculateLast() {
+        return Boolean.parseBoolean(JSON.get("calculate_last").getAsString());
     }
 
     public static DecimalFormat getDecimalFormat() {
-        return JSON.has("decimal_format") ? new DecimalFormat(JSON.get("decimal_format").getAsString()) : new DecimalFormat("#,##0.##");
+        return new DecimalFormat(JSON.get("decimal_format").getAsString());
     }
 
     public static double convertIfRadians(double value) {
-        return JSON.has("radians") && Boolean.parseBoolean(JSON.get("radians").getAsString()) ? Math.toRadians(value) : value;
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? Math.toRadians(value) : value;
     }
 
     public static boolean logExceptions() {
-        return JSON.has("log_exceptions") && Boolean.parseBoolean(JSON.get("log_exceptions").getAsString());
+        return Boolean.parseBoolean(JSON.get("log_exceptions").getAsString());
     }
 
     public static void refreshJson() {
@@ -66,29 +73,33 @@ public class Config {
             FileWriter writer = new FileWriter(CONFIG_FILE);
             JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + x.getValue().getRight() + ")=" + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
+            JSON.remove("functions");
             writer.close();
         } catch (Exception ignored) { }
     }
 
     public static void readJson() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(CONFIG_FILE));
-            JSON.entrySet().forEach(entry -> JSON.remove(entry.getKey()));
-            JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject().entrySet().forEach(entry -> JSON.add(entry.getKey(), entry.getValue()));
-            reader.close();
+        try (BufferedReader reader = new BufferedReader(new FileReader(CONFIG_FILE))) {
+            JsonObject tempJson;
+            try {
+                tempJson = JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject();
+            } catch (Exception ignored) {
+                tempJson = new JsonObject();
+            }
+            JsonObject json = tempJson; // annoying lambda requirement
+            DEFAULTS.forEach((key, defaultValue) -> JSON.add(key, json.get(key) instanceof JsonPrimitive primitive && primitive.isString() ? primitive : new JsonPrimitive(defaultValue)));
+            if (json.get("functions") instanceof JsonArray array) {
+                array.forEach(e -> FUNCTIONS.put(e.getAsString().split("\\(")[0], new Pair<>(MathEngine.tokenize(e.getAsString().split("=")[1]), e.getAsString().split("[()]")[1])));
+            }
         } catch (Exception ignored) { }
     }
 
     public static boolean debugTokens() {
-        return JSON.has("debug_tokens") && Boolean.parseBoolean(JSON.get("debug_tokens").getAsString());
-    }
-
-    public static boolean euler() {
-        return JSON.has("euler") && Boolean.parseBoolean(JSON.get("euler").getAsString());
+        return Boolean.parseBoolean(JSON.get("debug_tokens").getAsString());
     }
 
     public static void saveToChatHud(String input) {
-        if (JSON.has("copy_type") && JSON.get("copy_type").getAsString().equalsIgnoreCase("chat_history")) {
+        if (JSON.get("copy_type").getAsString().equalsIgnoreCase("chat_history")) {
             final MinecraftClient client = MinecraftClient.getInstance();
             client.inGameHud.getChatHud().addToMessageHistory(input);
         }
@@ -105,7 +116,7 @@ public class Config {
     }
 
     public static void saveToClipboard(String input) {
-        if (JSON.has("copy_type") && JSON.get("copy_type").getAsString().equalsIgnoreCase("clipboard")) {
+        if (JSON.get("copy_type").getAsString().equalsIgnoreCase("clipboard")) {
             final MinecraftClient client = MinecraftClient.getInstance();
             client.keyboard.setClipboard(input);
         }
