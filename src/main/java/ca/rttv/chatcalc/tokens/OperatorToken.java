@@ -1,10 +1,10 @@
 package ca.rttv.chatcalc.tokens;
 
+import ca.rttv.chatcalc.FunctionParameter;
 import ca.rttv.chatcalc.MathEngine;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Contract;
 
 import java.util.List;
@@ -40,22 +40,33 @@ public final class OperatorToken implements Token {
     }
 
     @Contract(value = "_,_,_->_", mutates = "param1")
-    public int eval(List<Token> tokens, int i, Optional<Pair<String, Double>> variable) {
-        if (tokens.get(i - 1) instanceof BracketToken bracketToken) {
-            tokens.remove(--i);
-            int start = bracketToken.getStart(tokens, i);
-            MathEngine.simplify(tokens.subList(start, i), false, variable);
+    public int eval(List<Token> tokens, int i, Optional<FunctionParameter[]> params) {
+        double left;
+        if (i == 0) {
+            left = 0;
+        } else {
+            if (tokens.get(i - 1) instanceof BracketToken bracketToken) {
+                tokens.remove(--i);
+                int start = bracketToken.getStart(tokens, i);
+                MathEngine.simplify(tokens.subList(start, i), false, params);
+            }
+
+            if (tokens.get(i - 1) instanceof NumberToken numberToken) {
+                tokens.remove(--i);
+                left = numberToken.val;
+            } else {
+                left = 0;
+            }
         }
-        double left = tokens.get(i - 1) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
         if (tokens.get(i + 1) instanceof BracketToken) {
             tokens.remove(--i);
-            MathEngine.simplify(tokens.subList(i, tokens.size()), false, variable);
+            MathEngine.simplify(tokens.subList(i, tokens.size()), false, params);
         }
-        double right = tokens.get(i + 1) instanceof NumberToken numberToken ? numberToken.val : Double.NaN;
-        tokens.set(i, new NumberToken(apply(left, right)));
-        tokens.remove(--i);
+        if (!(tokens.get(i + 1) instanceof NumberToken right)) {
+            throw new IllegalArgumentException();
+        }
+        tokens.set(i, new NumberToken(apply(left, right.val)));
         tokens.remove(i + 1);
-        i--;
         return i;
     }
 }

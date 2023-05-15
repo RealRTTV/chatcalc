@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Pair;
+import oshi.util.tuples.Triplet;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -16,7 +17,7 @@ public class Config {
     public static final JsonObject JSON;
     public static final Gson GSON;
     public static final File CONFIG_FILE;
-    public static final Map<String, Pair<List<Token>, String>> FUNCTIONS;
+    public static final Map<String, Pair<List<Token>, String[]>> FUNCTIONS;
     public static final ImmutableMap<String, String> DEFAULTS;
 
     static {
@@ -71,7 +72,7 @@ public class Config {
     public static void refreshJson() {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
-            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + x.getValue().getRight() + ")=" + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + String.join(ChatCalc.SEPARATOR, x.getValue().getRight()) + ")=" + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
             JSON.remove("functions");
             writer.close();
@@ -89,9 +90,36 @@ public class Config {
             JsonObject json = tempJson; // annoying lambda requirement
             DEFAULTS.forEach((key, defaultValue) -> JSON.add(key, json.get(key) instanceof JsonPrimitive primitive && primitive.isString() ? primitive : new JsonPrimitive(defaultValue)));
             if (json.get("functions") instanceof JsonArray array) {
-                array.forEach(e -> FUNCTIONS.put(e.getAsString().split("\\(")[0], new Pair<>(MathEngine.tokenize(e.getAsString().split("=")[1]), e.getAsString().split("[()]")[1])));
+                array.forEach(e -> {
+                    if (e instanceof JsonPrimitive primitive && primitive.isString()) {
+                        parseFunction(e.getAsString()).ifPresent(parsedFunction -> FUNCTIONS.put(parsedFunction.getA(), new Pair<>(parsedFunction.getB(), parsedFunction.getC())));
+                    }
+                });
             }
         } catch (Exception ignored) { }
+    }
+
+    public static Optional<Triplet<String, List<Token>, String[]>> parseFunction(String function) {
+        int functionNameEnd = function.indexOf('(');
+        if (functionNameEnd > 0) {
+            String functionName = function.substring(0, functionNameEnd);
+            int paramsEnd = function.substring(functionNameEnd).indexOf(')') + functionNameEnd;
+            if (functionName.matches("[A-Za-z]+") && paramsEnd > 0 && function.substring(paramsEnd + 1).startsWith("=") && function.length() > paramsEnd + 2) { // I'm not commenting why this works, I know it, It's just hard to explain
+                String[] params = function.substring(functionNameEnd + 1, paramsEnd).split(ChatCalc.SEPARATOR);
+                for (String param : params) {
+                    if (!param.matches("[A-Za-z]")) {
+                        return Optional.empty();
+                    }
+                }
+                String rest = function.substring(paramsEnd + 2);
+                try {
+                    List<Token> tokens = MathEngine.tokenize(rest);
+                    return Optional.of(new Triplet<>(functionName, tokens, params));
+//                    System.out.printf("fn: %s, params: %s, rest: %s%n", functionName, params, rest);
+                } catch (Exception ignored) { }
+            }
+        }
+        return Optional.empty();
     }
 
     public static boolean debugTokens() {
@@ -105,13 +133,26 @@ public class Config {
         }
     }
 
-    public static double func(String name, double value) {
+    public static double func(String name, double... values) {
         if (FUNCTIONS.containsKey(name)) {
+            if (values.length != FUNCTIONS.get(name).getRight().length) {
+                throw new IllegalArgumentException();
+            }
             List<Token> tokens = new ArrayList<>(FUNCTIONS.get(name).getLeft());
-            MathEngine.simplify(tokens, false, Optional.of(new Pair<>(FUNCTIONS.get(name).getRight(), value)));
-            return ((NumberToken) tokens.get(0)).val;
+            FunctionParameter[] parameters = new FunctionParameter[values.length];
+            for (int i = 0; i < parameters.length; i++) {
+                parameters[i] = new FunctionParameter(FUNCTIONS.get(name).getRight()[i], values[i]);
+            }
+            MathEngine.simplify(tokens, false, Optional.of(parameters));
+            if (tokens.get(0) instanceof NumberToken numberToken) {
+                return numberToken.val;
+            }
+            throw new IllegalArgumentException();
         } else {
-            return value;
+            if (values.length == 0) {
+                throw new IllegalArgumentException();
+            }
+            return values[0];
         }
     }
 

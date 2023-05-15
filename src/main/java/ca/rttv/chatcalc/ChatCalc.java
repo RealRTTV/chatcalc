@@ -1,5 +1,6 @@
 package ca.rttv.chatcalc;
 
+import ca.rttv.chatcalc.tokens.Token;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -7,12 +8,16 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Contract;
 import org.slf4j.Logger;
+import oshi.util.tuples.Triplet;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class ChatCalc {
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static final Pattern NUMBER = Pattern.compile("[-+]?\\d*\\.?\\d+([eE][-+]?\\d+)?");
+    public static final Pattern NUMBER = Pattern.compile("[-+]?\\d+(\\.\\d+)?");
+    public static final String SEPARATOR = ";";
 
     @Contract(value = "_->_", mutates = "param1")
     public static boolean tryParse(TextFieldWidget field) {
@@ -20,16 +25,23 @@ public class ChatCalc {
         String originalText = field.getText();
         int cursor = field.getCursor();
         String text = originalText.substring(0, cursor);
+        if ((text.equals("config?") || text.equals("cfg?") || text.equals("?")) && client.player != null) {
+            client.player.sendMessage(Text.translatable("chatcalc.config.description"));
+            return false;
+        }
         String[] split = text.split("=");
         if (split.length == 2) {
             if (Config.JSON.has(split[0])) {
                 Config.JSON.addProperty(split[0], split[1]);
                 Config.refreshJson();
                 return ChatHelper.replaceWord(field, "");
-            } else if (split[0].matches("[A-Za-z]+\\([A-Za-z]+\\)")) {
-                Config.FUNCTIONS.put(split[0].split("\\(")[0], new Pair<>(MathEngine.tokenize(split[1]), split[0].split("[()]")[1]));
-                Config.refreshJson();
-                return ChatHelper.replaceWord(field, "");
+            } else {
+                Optional<Triplet<String, List<Token>, String[]>> parsedFunction = Config.parseFunction(text);
+                if (parsedFunction.isPresent()) {
+                    Config.FUNCTIONS.put(parsedFunction.get().getA(), new Pair<>(parsedFunction.get().getB(), parsedFunction.get().getC()));
+                    Config.refreshJson();
+                    return ChatHelper.replaceWord(field, "");
+                }
             }
         } else if (Config.JSON.has(split[0])) {
             return ChatHelper.replaceWord(field, Config.JSON.get(split[0]).getAsString());

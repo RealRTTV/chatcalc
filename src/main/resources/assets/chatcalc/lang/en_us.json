@@ -4,5 +4,6 @@
   "chatcalc.debug_tokens.description": "A debug option to display all of the parsed tokens in chat and console before they get evaluated",
   "chatcalc.log_exceptions.description": "Logs exceptions to your minecraft logs. The reason this is a toggle is because when pressing tab for non chatcalc purposes, it throws an error",
   "chatcalc.copy_type.description": "An option either copy to your clipboard (value: clipboard) or add it to your chat history (value: chat_history) (the thing when pressing the up arrow and down arrow), or to not save to anywhere (none)",
-  "chatcalc.calculate_last.description": "When tabbing in usernames or subcommands, chatcalc could take precedence over those actions. Which is particularly annoying for usernames that start with x, y, z, etc. (default: true)"
+  "chatcalc.calculate_last.description": "When tabbing in usernames or subcommands, chatcalc could take precedence over those actions. Which is particularly annoying for usernames that start with x, y, z, etc. (default: true)",
+  "chatcalc.config.description": "Configuration options are:\n - Decimal Format (decimal_format?)\n - Radians (radians?)\n - Debug Tokens (debug_tokens?)\n - Log Exceptions (log_exceptions?)\n - Copy Type (copy_type?)\n - Calculate Last (calculate_last?)"
 }

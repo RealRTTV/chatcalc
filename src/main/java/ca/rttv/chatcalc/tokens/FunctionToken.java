@@ -1,6 +1,7 @@
 package ca.rttv.chatcalc.tokens;
 
 import ca.rttv.chatcalc.Config;
+import ca.rttv.chatcalc.MathEngine;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -47,11 +48,21 @@ public final class FunctionToken implements Token {
         func = value;
     }
 
-    public double apply(double value) {
+    public double apply(double... values) {
         if (func.startsWith("log_")) {
-            return log(Double.parseDouble(func.substring(4)), value);
+            if (values.length != 1) {
+                throw new IllegalArgumentException();
+            }
+            return log(MathEngine.eval(func.substring(4)), values[0]);
         }
-        return functions.containsKey(func) ? functions.get(func).applyAsDouble(value) : Config.func(func, value);
+        if (functions.containsKey(func)) {
+            if (values.length != 1) {
+                throw new IllegalArgumentException();
+            }
+            return functions.get(func).applyAsDouble(values[0]);
+        } else {
+            return Config.func(func, values);
+        }
     }
 
     public static double log(double base, double value) {
