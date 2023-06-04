@@ -2,6 +2,7 @@ package ca.rttv.chatcalc;
 
 import ca.rttv.chatcalc.tokens.Token;
 import com.mojang.logging.LogUtils;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
@@ -18,17 +19,14 @@ public class ChatCalc {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final Pattern NUMBER = Pattern.compile("[-+]?\\d+(\\.\\d+)?");
     public static final String SEPARATOR = ";";
+    public static final char SEPARATOR_CHAR = ';';
 
     @Contract(value = "_->_", mutates = "param1")
     public static boolean tryParse(TextFieldWidget field) {
         final MinecraftClient client = MinecraftClient.getInstance();
         String originalText = field.getText();
         int cursor = field.getCursor();
-        String text = originalText.substring(0, cursor);
-        if ((text.equals("config?") || text.equals("cfg?") || text.equals("?")) && client.player != null) {
-            client.player.sendMessage(Text.translatable("chatcalc.config.description"));
-            return false;
-        }
+        String text = ChatHelper.getWord(originalText, cursor);
         String[] split = text.split("=");
         if (split.length == 2) {
             if (Config.JSON.has(split[0])) {
@@ -36,7 +34,7 @@ public class ChatCalc {
                 Config.refreshJson();
                 return ChatHelper.replaceWord(field, "");
             } else {
-                Optional<Triplet<String, List<Token>, String[]>> parsedFunction = Config.parseFunction(text);
+                Optional<Triplet<String, String, String[]>> parsedFunction = Config.parseFunction(text);
                 if (parsedFunction.isPresent()) {
                     Config.FUNCTIONS.put(parsedFunction.get().getA(), new Pair<>(parsedFunction.get().getB(), parsedFunction.get().getC()));
                     Config.refreshJson();
@@ -49,24 +47,36 @@ public class ChatCalc {
             client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
             return false;
         }
-
-        String word = ChatHelper.getWord(originalText, cursor);
-        if (NUMBER.matcher(word).matches()) {
+        
+        if ((text.equals("config?") || text.equals("cfg?") || text.equals("?")) && client.player != null) {
+            client.player.sendMessage(Text.translatable("chatcalc.config.description"));
+            return false;
+        } else if (NUMBER.matcher(text).matches()) {
             return false;
         } else {
             boolean add = false;
-            if (word.endsWith("=")) {
-                word = word.substring(0, word.length() - 1);
+            if (text.endsWith("=")) {
+                text = text.substring(0, text.length() - 1);
                 add = true;
             }
             try {
-                String solution = Config.getDecimalFormat().format(MathEngine.eval(word));
+                long start = System.nanoTime();
+                double result = Config.makeEngine().eval(text, Optional.empty());
+                double us = (System.nanoTime() - start) / 1_000.0;
+                if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + us + "µs to parse equation"), true);
+                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + us + "µs to parse equation"), false);
+                }
+                String solution = Config.getDecimalFormat().format(result); // so fast that creating a new one everytime doesn't matter, also lets me use fields
+                if (solution.equals("-0")) {
+                    solution = "0";
+                }
                 Config.saveToChatHud(originalText);
                 Config.saveToClipboard(originalText);
                 return add ? ChatHelper.addWordAfterIndex(field, solution) : ChatHelper.replaceWord(field, solution);
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 if (Config.logExceptions()) {
-                    LOGGER.error("ChatCalc Parse Error: ", e);
+                    LOGGER.error("ChatCalc Parse Error: ", t);
                 }
                 return false;
             }

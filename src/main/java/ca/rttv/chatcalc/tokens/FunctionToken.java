@@ -1,13 +1,14 @@
 package ca.rttv.chatcalc.tokens;
 
 import ca.rttv.chatcalc.Config;
-import ca.rttv.chatcalc.MathEngine;
+import ca.rttv.chatcalc.TokenizedMathEngine;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.DoubleUnaryOperator;
 
 public final class FunctionToken implements Token {
@@ -53,7 +54,7 @@ public final class FunctionToken implements Token {
             if (values.length != 1) {
                 throw new IllegalArgumentException();
             }
-            return log(MathEngine.eval(func.substring(4)), values[0]);
+            return log(Config.makeEngine().eval(func.substring(4), Optional.empty()), values[0]);
         }
         if (functions.containsKey(func)) {
             if (values.length != 1) {

@@ -1,7 +1,5 @@
 package ca.rttv.chatcalc;
 
-import ca.rttv.chatcalc.tokens.NumberToken;
-import ca.rttv.chatcalc.tokens.Token;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import net.minecraft.client.MinecraftClient;
@@ -10,14 +8,16 @@ import oshi.util.tuples.Triplet;
 
 import java.io.*;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Config {
     public static final JsonObject JSON;
     public static final Gson GSON;
     public static final File CONFIG_FILE;
-    public static final Map<String, Pair<List<Token>, String[]>> FUNCTIONS;
+    public static final Map<String, Pair<String, String[]>> FUNCTIONS;
     public static final ImmutableMap<String, String> DEFAULTS;
 
     static {
@@ -28,6 +28,7 @@ public class Config {
                 .put("log_exceptions", "false")
                 .put("copy_type", "none")
                 .put("calculate_last", "true")
+                .put("engine", "nibble")
                 .build();
         CONFIG_FILE = new File(".", "config/chatcalc.json");
         GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -72,7 +73,7 @@ public class Config {
     public static void refreshJson() {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
-            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + String.join(ChatCalc.SEPARATOR, x.getValue().getRight()) + ")=" + x.getValue().getLeft().stream().map(Object::toString).collect(Collectors.joining())).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + String.join(ChatCalc.SEPARATOR, x.getValue().getRight()) + ")=" + x.getValue().getLeft()).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
             JSON.remove("functions");
             writer.close();
@@ -99,7 +100,7 @@ public class Config {
         } catch (Exception ignored) { }
     }
 
-    public static Optional<Triplet<String, List<Token>, String[]>> parseFunction(String function) {
+    public static Optional<Triplet<String, String, String[]>> parseFunction(String function) {
         int functionNameEnd = function.indexOf('(');
         if (functionNameEnd > 0) {
             String functionName = function.substring(0, functionNameEnd);
@@ -112,11 +113,7 @@ public class Config {
                     }
                 }
                 String rest = function.substring(paramsEnd + 2);
-                try {
-                    List<Token> tokens = MathEngine.tokenize(rest);
-                    return Optional.of(new Triplet<>(functionName, tokens, params));
-//                    System.out.printf("fn: %s, params: %s, rest: %s%n", functionName, params, rest);
-                } catch (Exception ignored) { }
+                return Optional.of(new Triplet<>(functionName, rest, params));
             }
         }
         return Optional.empty();
@@ -138,16 +135,12 @@ public class Config {
             if (values.length != FUNCTIONS.get(name).getRight().length) {
                 throw new IllegalArgumentException();
             }
-            List<Token> tokens = new ArrayList<>(FUNCTIONS.get(name).getLeft());
+            String input = FUNCTIONS.get(name).getLeft();
             FunctionParameter[] parameters = new FunctionParameter[values.length];
             for (int i = 0; i < parameters.length; i++) {
                 parameters[i] = new FunctionParameter(FUNCTIONS.get(name).getRight()[i], values[i]);
             }
-            MathEngine.simplify(tokens, false, Optional.of(parameters));
-            if (tokens.get(0) instanceof NumberToken numberToken) {
-                return numberToken.val;
-            }
-            throw new IllegalArgumentException();
+            return Config.makeEngine().eval(input,  Optional.of(parameters));
         } else {
             if (values.length == 0) {
                 throw new IllegalArgumentException();
@@ -160,6 +153,14 @@ public class Config {
         if (JSON.get("copy_type").getAsString().equalsIgnoreCase("clipboard")) {
             final MinecraftClient client = MinecraftClient.getInstance();
             client.keyboard.setClipboard(input);
+        }
+    }
+
+    public static MathEngine makeEngine() {
+        if (JSON.get("engine").getAsString().equals("token")) {
+            return new TokenizedMathEngine();
+        } else {
+            return new NibbleMathEngine();
         }
     }
 }

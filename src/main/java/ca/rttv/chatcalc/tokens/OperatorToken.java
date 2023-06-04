@@ -1,7 +1,7 @@
 package ca.rttv.chatcalc.tokens;
 
 import ca.rttv.chatcalc.FunctionParameter;
-import ca.rttv.chatcalc.MathEngine;
+import ca.rttv.chatcalc.TokenizedMathEngine;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -48,7 +48,7 @@ public final class OperatorToken implements Token {
             if (tokens.get(i - 1) instanceof BracketToken bracketToken) {
                 tokens.remove(--i);
                 int start = bracketToken.getStart(tokens, i);
-                MathEngine.simplify(tokens.subList(start, i), false, params);
+                TokenizedMathEngine.simplify(tokens.subList(start, i), false, params); // safe because the only engine to use tokens is the token engin
             }
 
             if (tokens.get(i - 1) instanceof NumberToken numberToken) {
@@ -60,7 +60,14 @@ public final class OperatorToken implements Token {
         }
         if (tokens.get(i + 1) instanceof BracketToken) {
             tokens.remove(--i);
-            MathEngine.simplify(tokens.subList(i, tokens.size()), false, params);
+            TokenizedMathEngine.simplify(tokens.subList(i, tokens.size()), false, params); // safe because the only engine to use tokens is the token engin
+        }
+        if (tokens.get(i + 1) instanceof OperatorToken op && (op.val == '+' || op.val == '-')) {
+            tokens.remove(i + 1);
+            TokenizedMathEngine.simplify(tokens.subList(i + 1, tokens.size()), false, params); // safe because the only engine to use tokens is the token engin
+            if (tokens.get(i + 1) instanceof NumberToken right && op.val == '-') {
+                tokens.set(i + 1, new NumberToken(-right.val));
+            }
         }
         if (!(tokens.get(i + 1) instanceof NumberToken right)) {
             throw new IllegalArgumentException();
