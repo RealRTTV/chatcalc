@@ -17,15 +17,13 @@ public class Config {
     public static final JsonObject JSON;
     public static final Gson GSON;
     public static final File CONFIG_FILE;
-    public static final Map<String, Pair<String, String[]>> FUNCTIONS;
+    public static final Map<String, CallableFunction> FUNCTIONS;
     public static final ImmutableMap<String, String> DEFAULTS;
 
     static {
         DEFAULTS = ImmutableMap.<String, String>builder()
                 .put("decimal_format", "#,##0.##")
                 .put("radians", "false")
-                .put("debug_tokens", "false")
-                .put("log_exceptions", "false")
                 .put("copy_type", "none")
                 .put("calculate_last", "true")
                 .put("display_above", "true")
@@ -66,14 +64,10 @@ public class Config {
         return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value); // sine takes in radians, so we have to do inverse, if we have radians, it'll convert, if we don't, we need to cancel out
     }
 
-    public static boolean logExceptions() {
-        return Boolean.parseBoolean(JSON.get("log_exceptions").getAsString());
-    }
-
     public static void refreshJson() {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
-            JSON.add("functions", FUNCTIONS.entrySet().stream().map(x -> x.getKey() + "(" + String.join(ChatCalc.SEPARATOR, x.getValue().getRight()) + ")=" + x.getValue().getLeft()).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            JSON.add("functions", FUNCTIONS.values().stream().map(Object::toString).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
             JSON.remove("functions");
             writer.close();
@@ -93,30 +87,11 @@ public class Config {
             if (json.get("functions") instanceof JsonArray array) {
                 array.forEach(e -> {
                     if (e instanceof JsonPrimitive primitive && primitive.isString()) {
-                        parseFunction(e.getAsString()).ifPresent(parsedFunction -> FUNCTIONS.put(parsedFunction.getA(), new Pair<>(parsedFunction.getB(), parsedFunction.getC())));
+                        CallableFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(func.name(), func));
                     }
                 });
             }
         } catch (Exception ignored) { }
-    }
-
-    public static Optional<Triplet<String, String, String[]>> parseFunction(String function) {
-        int functionNameEnd = function.indexOf('(');
-        if (functionNameEnd > 0) {
-            String functionName = function.substring(0, functionNameEnd);
-            int paramsEnd = function.substring(functionNameEnd).indexOf(')') + functionNameEnd;
-            if (functionName.matches("[A-Za-z]+") && paramsEnd > 0 && function.substring(paramsEnd + 1).startsWith("=") && function.length() > paramsEnd + 2) { // I'm not commenting why this works, I know it, It's just hard to explain
-                String[] params = function.substring(functionNameEnd + 1, paramsEnd).split(ChatCalc.SEPARATOR);
-                for (String param : params) {
-                    if (!param.matches("[A-Za-z]")) {
-                        return Optional.empty();
-                    }
-                }
-                String rest = function.substring(paramsEnd + 2);
-                return Optional.of(new Triplet<>(functionName, rest, params));
-            }
-        }
-        return Optional.empty();
     }
 
     public static boolean displayAbove() { return Boolean.parseBoolean(JSON.get("display_above").getAsString()); }
@@ -129,21 +104,19 @@ public class Config {
     }
 
     public static double func(String name, double... values) {
-        if (FUNCTIONS.containsKey(name)) {
-            if (values.length != FUNCTIONS.get(name).getRight().length) {
-                throw new IllegalArgumentException();
+        CallableFunction func = FUNCTIONS.get(name);
+        if (func != null) {
+            if (values.length != func.params().length) {
+                throw new IllegalArgumentException("Invalid amount of arguments for custom function");
             }
-            String input = FUNCTIONS.get(name).getLeft();
+            String input = func.rest();
             FunctionParameter[] parameters = new FunctionParameter[values.length];
             for (int i = 0; i < parameters.length; i++) {
-                parameters[i] = new FunctionParameter(FUNCTIONS.get(name).getRight()[i], values[i]);
+                parameters[i] = new FunctionParameter(func.params()[i], values[i]);
             }
-            return Config.makeEngine().eval(input,  Optional.of(parameters));
+            return Config.makeEngine().eval(input, parameters);
         } else {
-            if (values.length == 0) {
-                throw new IllegalArgumentException();
-            }
-            return values[0];
+            throw new IllegalArgumentException("Tried to call unknown function: " + name);
         }
     }
 

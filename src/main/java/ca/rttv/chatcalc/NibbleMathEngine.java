@@ -10,20 +10,43 @@ import java.util.Optional;
 public class NibbleMathEngine implements MathEngine {
     byte[] bytes;
     int idx;
-    @Nullable FunctionParameter[] params;
+    FunctionParameter[] params;
     double x, y, z;
 
     @Override
-    public double eval(String input, Optional<FunctionParameter[]> paramaters) {
-        bytes = input.concat("\0").getBytes(StandardCharsets.US_ASCII); // we shouldn't encounter unicode in our math
+    public double eval(String input, FunctionParameter[] paramaters) {
+        bytes = fixParenthesis(input).concat("\0").getBytes(StandardCharsets.US_ASCII); // we shouldn't encounter unicode in our math
         idx = 0;
-        params = paramaters.orElse(null);
+        params = paramaters;
         //noinspection DataFlowIssue -- player != null when the chat != null
         Vec3d pos = MinecraftClient.getInstance().player.getPos();
         x = pos.x;
         y = pos.y;
         z = pos.z;
-        return expression(false);
+        double result = expression(false);
+        if (idx + 1 != bytes.length) {
+            throw new IllegalArgumentException("Evaluation had unexpected remaining characters");
+        }
+        return result;
+    }
+
+    private String fixParenthesis(String input) {
+        int n = 0;
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c == '(') {
+                n++;
+            } else if (c == ')') {
+                n--;
+            }
+        }
+        if (n < 0) {
+            return "(".repeat(-n).concat(input);
+        } else if (n > 0) {
+            return input.concat(")".repeat(n));
+        } else {
+            return input;
+        }
     }
 
     private boolean bite(char bite) { // pun intended
@@ -98,7 +121,8 @@ public class NibbleMathEngine implements MathEngine {
                 while (bytes[idx] <= 'z' & bytes[idx] >= 'a' | bytes[idx] == '_') idx++;
                 String func = new String(bytes, start, idx - start, StandardCharsets.US_ASCII);
                 double u = 1.0;
-             b: while (true) {
+                b:
+                while (true) {
                     if (func.startsWith("pi")) {
                         x *= u;
                         u = Math.PI;
@@ -129,14 +153,12 @@ public class NibbleMathEngine implements MathEngine {
                         func = func.substring(1);
                         continue;
                     }
-                    if (params != null) {
-                        for (FunctionParameter param : params) {
-                            if (param != null && func.startsWith(param.name())) {
-                                x *= u;
-                                u = param.value();
-                                func = func.substring(param.name().length());
-                                continue b;
-                            }
+                    for (FunctionParameter param : params) {
+                        if (func.startsWith(param.name())) {
+                            x *= u;
+                            u = param.value();
+                            func = func.substring(param.name().length());
+                            continue b;
                         }
                     }
                     if (func.isEmpty()) {
@@ -150,7 +172,8 @@ public class NibbleMathEngine implements MathEngine {
                     double base = part(false);
                     if (!bite('(')) throw new IllegalArgumentException("Expected parenthesis for logarithmic function");
                     double value = expression(false);
-                    if (!bite(')')) throw new IllegalArgumentException("Expected closing parenthesis for logarithmic function");
+                    if (!bite(')'))
+                        throw new IllegalArgumentException("Expected closing parenthesis for logarithmic function");
                     x *= MathematicalFunction.log(base, value);
                     break a;
                 }
@@ -177,7 +200,8 @@ public class NibbleMathEngine implements MathEngine {
                     if (!bite(';')) throw new AssertionError("Expected that a semicolon exists between the parameters");
                 }
                 x *= Math.pow(new MathematicalFunction(func).apply(values), exponent);
-            } else throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
+            } else
+                throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
         }
 
         if (bite('^')) x = Math.pow(x, part(false));

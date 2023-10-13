@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class ChatCalc {
-    public static final Logger LOGGER = LogUtils.getLogger();
     public static final Pattern NUMBER = Pattern.compile("[-+]?\\d+(\\.\\d+)?");
     public static final String SEPARATOR = ";";
     public static final char SEPARATOR_CHAR = ';';
@@ -32,12 +31,12 @@ public class ChatCalc {
                 Config.refreshJson();
                 return ChatHelper.replaceWord(field, "");
             } else {
-                Optional<Triplet<String, String, String[]>> parsedFunction = Config.parseFunction(text);
-                if (parsedFunction.isPresent()) {
-                    Config.FUNCTIONS.put(parsedFunction.get().getA(), new Pair<>(parsedFunction.get().getB(), parsedFunction.get().getC()));
+                Optional<CallableFunction> func = CallableFunction.fromString(text);
+                if (func.isPresent()) {
+                    Config.FUNCTIONS.put(func.get().name(), func.get());
                     Config.refreshJson();
                     return ChatHelper.replaceWord(field, "");
-                }
+                };
             }
         } else if (Config.JSON.has(split[0])) {
             return ChatHelper.replaceWord(field, Config.JSON.get(split[0]).getAsString());
@@ -59,7 +58,7 @@ public class ChatCalc {
             }
             try {
                 long start = System.nanoTime();
-                double result = Config.makeEngine().eval(text, Optional.empty());
+                double result = Config.makeEngine().eval(text, new FunctionParameter[0]);
                 double us = (System.nanoTime() - start) / 1_000.0;
                 if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
                     MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + us + "µs to parse equation"), true);
@@ -73,9 +72,6 @@ public class ChatCalc {
                 Config.saveToClipboard(originalText);
                 return add ? ChatHelper.addWordAfterIndex(field, solution) : ChatHelper.replaceWord(field, solution);
             } catch (Throwable t) {
-                if (Config.logExceptions()) {
-                    LOGGER.error("ChatCalc Parse Error: ", t);
-                }
                 return false;
             }
         }
