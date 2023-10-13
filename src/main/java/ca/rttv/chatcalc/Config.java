@@ -28,7 +28,7 @@ public class Config {
                 .put("log_exceptions", "false")
                 .put("copy_type", "none")
                 .put("calculate_last", "true")
-                .put("engine", "nibble")
+                .put("display_above", "true")
                 .build();
         CONFIG_FILE = new File(".", "config/chatcalc.json");
         GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -119,9 +119,7 @@ public class Config {
         return Optional.empty();
     }
 
-    public static boolean debugTokens() {
-        return Boolean.parseBoolean(JSON.get("debug_tokens").getAsString());
-    }
+    public static boolean displayAbove() { return Boolean.parseBoolean(JSON.get("display_above").getAsString()); }
 
     public static void saveToChatHud(String input) {
         if (JSON.get("copy_type").getAsString().equalsIgnoreCase("chat_history")) {
@@ -157,10 +155,6 @@ public class Config {
     }
 
     public static MathEngine makeEngine() {
-        if (JSON.get("engine").getAsString().equals("token")) {
-            return new TokenizedMathEngine();
-        } else {
-            return new NibbleMathEngine();
-        }
+        return new NibbleMathEngine();
     }
 }

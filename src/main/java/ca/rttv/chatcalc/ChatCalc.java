@@ -1,6 +1,5 @@
 package ca.rttv.chatcalc;
 
-import ca.rttv.chatcalc.tokens.Token;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -11,7 +10,6 @@ import org.jetbrains.annotations.Contract;
 import org.slf4j.Logger;
 import oshi.util.tuples.Triplet;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -43,7 +41,7 @@ public class ChatCalc {
             }
         } else if (Config.JSON.has(split[0])) {
             return ChatHelper.replaceWord(field, Config.JSON.get(split[0]).getAsString());
-        } else if (split[0].length() > 0 && Config.JSON.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
+        } else if (!split[0].isEmpty() && Config.JSON.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
             client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
             return false;
         }

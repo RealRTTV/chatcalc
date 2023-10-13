@@ -1,6 +1,5 @@
 package ca.rttv.chatcalc;
 
-import ca.rttv.chatcalc.tokens.FunctionToken;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +37,7 @@ public class NibbleMathEngine implements MathEngine {
 
     private double expression(boolean abs) {
         double x = modulo(abs);
-        while (true) { // prolly unnecessarily
+        while (true) {
             if (bite('+')) x += modulo(abs);
             else if (bite('-')) x -= modulo(abs);
             else return x;
@@ -47,27 +46,38 @@ public class NibbleMathEngine implements MathEngine {
 
     private double modulo(boolean abs) {
         double x = term(abs);
-        while (true) { // prolly unnecessarily
+        while (true) {
             if (bite('%')) x %= term(abs);
             else return x;
         }
     }
 
     private double term(boolean abs) {
+        double x = grouping(abs);
+        while (true) {
+            if (bite('*')) x *= grouping(abs);
+            else if (bite('/')) x /= grouping(abs);
+            else if (bytes[idx] <= '9' & bytes[idx] >= '0') x *= expression(abs);
+            else if (!abs & bytes[idx] == '|') x *= Math.abs(expression(false)); // simplify to false
+            else return x;
+        }
+    }
+
+    private double grouping(boolean abs) {
         double x = part(abs);
         while (true) {
-            if (bite('*')) x *= part(abs);
-            else if (bite('/')) x /= part(abs);
-            else if (bytes[idx] == '(') x *= expression(abs);
-            else if (bytes[idx] <= '9' && bytes[idx] >= '0') x *= expression(abs);
-            else if (!abs && bytes[idx] == '|') x *= Math.abs(expression(false)); // simplify to false
+            if (bytes[idx] == '(') x *= expression(abs);
             else return x;
         }
     }
 
     private double part(boolean abs) {
-        long sign = bite('-') ? 0x8000_0000_0000_0000L : 0L;
-        if (sign == 0) bite('+');
+        long sign = 0L;
+        while (bytes[idx] == '+' | bytes[idx] == '-') {
+            if (bytes[idx++] == '-') {
+                sign ^= 0x8000_0000_0000_0000L;
+            }
+        }
 
         double x = 1.0;
 
@@ -79,10 +89,10 @@ public class NibbleMathEngine implements MathEngine {
             } else if (!abs && bite('|')) {
                 x = Math.abs(expression(true));
                 if (!bite('|')) throw new IllegalArgumentException("Expected closing absolute value character");
-            } else if ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.') {
+            } else if ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.' | bytes[idx] == ',') {
                 int start = idx;
-                while ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.') idx++;
-                x = Double.parseDouble(new String(bytes, start, idx - start, StandardCharsets.US_ASCII));
+                while ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.' | bytes[idx] == ',') idx++;
+                x = Double.parseDouble(new String(bytes, start, idx - start, StandardCharsets.US_ASCII).replace(",", ""));
             } else if (bytes[idx] <= 'z' & bytes[idx] >= 'a') {
                 int start = idx;
                 while (bytes[idx] <= 'z' & bytes[idx] >= 'a' | bytes[idx] == '_') idx++;
@@ -129,7 +139,7 @@ public class NibbleMathEngine implements MathEngine {
                             }
                         }
                     }
-                    if (func.length() == 0) {
+                    if (func.isEmpty()) {
                         if (bite('^')) u = Math.pow(u, part(false));
                         x *= u;
                         break a;
@@ -138,10 +148,10 @@ public class NibbleMathEngine implements MathEngine {
                 }
                 if (func.equals("log_")) {
                     double base = part(false);
-                    if (!bite('(')) throw new IllegalArgumentException("Expected parenthesis for function");
+                    if (!bite('(')) throw new IllegalArgumentException("Expected parenthesis for logarithmic function");
                     double value = expression(false);
-                    if (!bite(')')) throw new IllegalArgumentException("Expected closing parenthesis for function");
-                    x *= FunctionToken.log(base, value);
+                    if (!bite(')')) throw new IllegalArgumentException("Expected closing parenthesis for logarithmic function");
+                    x *= MathematicalFunction.log(base, value);
                     break a;
                 }
                 int param_count = 1;
@@ -166,9 +176,8 @@ public class NibbleMathEngine implements MathEngine {
                     if (bite(')')) break;
                     if (!bite(';')) throw new AssertionError("Expected that a semicolon exists between the parameters");
                 }
-                x *= Math.pow(new FunctionToken(func).apply(values), exponent);
-            } else
-                throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
+                x *= Math.pow(new MathematicalFunction(func).apply(values), exponent);
+            } else throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
         }
 
         if (bite('^')) x = Math.pow(x, part(false));

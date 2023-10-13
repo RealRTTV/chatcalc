@@ -1,17 +1,10 @@
-package ca.rttv.chatcalc.tokens;
-
-import ca.rttv.chatcalc.Config;
-import ca.rttv.chatcalc.TokenizedMathEngine;
-import net.minecraft.text.LiteralTextContent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+package ca.rttv.chatcalc;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.DoubleUnaryOperator;
 
-public final class FunctionToken implements Token {
+public final class MathematicalFunction {
     private static final Map<String, DoubleUnaryOperator> functions;
 
     static {
@@ -45,17 +38,11 @@ public final class FunctionToken implements Token {
         return func;
     }
 
-    public FunctionToken(String value) {
+    public MathematicalFunction(String value) {
         func = value;
     }
 
     public double apply(double... values) {
-        if (func.startsWith("log_")) {
-            if (values.length != 1) {
-                throw new IllegalArgumentException();
-            }
-            return log(Config.makeEngine().eval(func.substring(4), Optional.empty()), values[0]);
-        }
         if (functions.containsKey(func)) {
             if (values.length != 1) {
                 throw new IllegalArgumentException();
@@ -68,10 +55,5 @@ public final class FunctionToken implements Token {
 
     public static double log(double base, double value) {
         return Math.log(value) / Math.log(base);
-    }
-
-    @Override
-    public Text toText() {
-        return MutableText.of(new LiteralTextContent("§e" + func));
     }
 }
