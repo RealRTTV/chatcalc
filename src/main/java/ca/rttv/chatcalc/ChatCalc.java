@@ -25,6 +25,9 @@ public class ChatCalc {
         int cursor = field.getCursor();
         String text = ChatHelper.getWord(originalText, cursor);
         String[] split = text.split("=");
+        if (split.length < 2) {
+            return false;
+        }
         if (split.length == 2) {
             if (Config.JSON.has(split[0])) {
                 Config.JSON.addProperty(split[0], split[1]);
