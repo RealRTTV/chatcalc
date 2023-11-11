@@ -25,7 +25,7 @@ public class ChatCalc {
         int cursor = field.getCursor();
         String text = ChatHelper.getWord(originalText, cursor);
         String[] split = text.split("=");
-        if (split.length < 2) {
+        if (split.length == 0) {
             return false;
         }
         if (split.length == 2) {
