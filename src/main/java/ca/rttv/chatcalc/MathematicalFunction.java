@@ -62,17 +62,25 @@ public final class MathematicalFunction {
     public double apply(double... values) {
         if (functions.containsKey(func)) {
             if (func.equals("min")) {
-                if (values.length != 2) {
+                if (values.length == 0) {
                     throw new IllegalArgumentException();
                 }
-                return Math.min(values[0], values[1]);
+                double min = values[0];
+                for (double value : values) {
+                    min = Math.min(min, value);
+                }
+                return min;
             }
 
             if (func.equals("max")) {
-                if (values.length != 2) {
+                if (values.length == 0) {
                     throw new IllegalArgumentException();
                 }
-                return Math.max(values[0], values[1]);
+                double max = values[0];
+                for (double value : values) {
+                    max = Math.max(max, value);
+                }
+                return max;
             }
 
             if (func.equals("clamp")) {
