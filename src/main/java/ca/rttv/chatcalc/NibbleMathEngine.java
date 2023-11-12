@@ -124,16 +124,34 @@ public class NibbleMathEngine implements MathEngine {
                 double u = 1.0;
                 b:
                 while (true) {
+                    if (func.startsWith("rand()")) {
+                        x *= u;
+                        u = Math.random();
+                        func = func.substring(6);
+                        continue;
+                    }
+                    if (func.startsWith("random()")) {
+                        x *= u;
+                        u = Math.random();
+                        func = func.substring(6);
+                        continue;
+                    }
+                    if (func.startsWith("rad")) {
+                        x *= u;
+                        u = Config.radians() ? 1.0 : 57.29577951308232;
+                        func = func.substring(3);
+                        continue;
+                    }
                     if (func.startsWith("yaw")) {
                         x *= u;
                         u = this.yaw;
-                        func = func.substring(4);
+                        func = func.substring(3);
                         continue;
                     }
                     if (func.startsWith("pitch")) {
                         x *= u;
                         u = this.pitch;
-                        func = func.substring(4);
+                        func = func.substring(5);
                         continue;
                     }
                     if (func.startsWith("pi")) {
@@ -142,10 +160,22 @@ public class NibbleMathEngine implements MathEngine {
                         func = func.substring(2);
                         continue;
                     }
+                    if (func.startsWith("tau")) {
+                        x *= u;
+                        u = Math.PI * 2;
+                        func = func.substring(2);
+                        continue;
+                    }
                     if (func.startsWith("e")) {
                         x *= u;
                         u = Math.E;
                         func = func.substring(1);
+                        continue;
+                    }
+                    if (func.startsWith("phi")) {
+                        x *= u;
+                        u = 1.6180339887498948482;
+                        func = func.substring(2);
                         continue;
                     }
                     if (func.startsWith("x")) {

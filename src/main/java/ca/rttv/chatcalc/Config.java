@@ -65,6 +65,10 @@ public class Config {
         return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toDegrees(value);
     }
 
+    public static boolean radians() {
+        return Boolean.parseBoolean(JSON.get("radians").getAsString());
+    }
+
     public static void refreshJson() {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
@@ -77,15 +81,16 @@ public class Config {
 
     public static void readJson() {
         try (BufferedReader reader = new BufferedReader(new FileReader(CONFIG_FILE))) {
-            JsonObject tempJson;
+            var json = new Object() {
+                JsonObject obj;
+            };
             try {
-                tempJson = JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject();
+                json.obj = JsonParser.parseString(reader.lines().collect(Collectors.joining("\n"))).getAsJsonObject();
             } catch (Exception ignored) {
-                tempJson = new JsonObject();
+                json.obj = new JsonObject();
             }
-            JsonObject json = tempJson; // annoying lambda requirement
-            DEFAULTS.forEach((key, defaultValue) -> JSON.add(key, json.get(key) instanceof JsonPrimitive primitive && primitive.isString() ? primitive : new JsonPrimitive(defaultValue)));
-            if (json.get("functions") instanceof JsonArray array) {
+            DEFAULTS.forEach((key, defaultValue) -> JSON.add(key, json.obj.get(key) instanceof JsonPrimitive primitive && primitive.isString() ? primitive : new JsonPrimitive(defaultValue)));
+            if (json.obj.get("functions") instanceof JsonArray array) {
                 array.forEach(e -> {
                     if (e instanceof JsonPrimitive primitive && primitive.isString()) {
                         CallableFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(func.name(), func));

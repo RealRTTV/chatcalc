@@ -1,5 +1,7 @@
 package ca.rttv.chatcalc;
 
+import net.minecraft.util.math.MathHelper;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.DoubleUnaryOperator;
@@ -43,6 +45,7 @@ public final class MathematicalFunction {
         functions.put("abs", Math::abs);
         functions.put("log", Math::log10);
         functions.put("ln", Math::log);
+        functions.put("exp", Math::exp);
     }
 
     public final String func;
@@ -58,9 +61,31 @@ public final class MathematicalFunction {
 
     public double apply(double... values) {
         if (functions.containsKey(func)) {
+            if (func.equals("min")) {
+                if (values.length != 2) {
+                    throw new IllegalArgumentException();
+                }
+                return Math.min(values[0], values[1]);
+            }
+
+            if (func.equals("max")) {
+                if (values.length != 2) {
+                    throw new IllegalArgumentException();
+                }
+                return Math.max(values[0], values[1]);
+            }
+
+            if (func.equals("clamp")) {
+                if (values.length != 3) {
+                    throw new IllegalArgumentException();
+                }
+                return MathHelper.clamp(values[0], values[1], values[2]);
+            }
+
             if (values.length != 1) {
                 throw new IllegalArgumentException();
             }
+
             return functions.get(func).applyAsDouble(values[0]);
         } else {
             return Config.func(func, values);
