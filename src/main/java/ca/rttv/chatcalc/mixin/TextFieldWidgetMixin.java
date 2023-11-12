@@ -44,12 +44,14 @@ abstract class TextFieldWidgetMixin {
     @Unique
     private void chatcalc$displayAbove(DrawContext context, int x, int y) {
         if (!Config.displayAbove()) {
+            evaluationCache = null;
             return;
         }
 
         String word = ChatHelper.getWord(getText(), getCursor());
 
         if (ChatCalc.NUMBER.matcher(word).matches()) {
+            evaluationCache = null;
             return;
         }
 
@@ -64,7 +66,7 @@ abstract class TextFieldWidgetMixin {
             Text text = Text.literal("=" + Config.getDecimalFormat().format(result));
             context.drawTooltip(textRenderer, text, x - 8, y - 4);
         } catch (Exception ignored) {
-            // do nothing
+            evaluationCache = null;
         }
     }
 }

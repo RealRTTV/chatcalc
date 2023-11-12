@@ -6,8 +6,7 @@
   "name": "ChatCalc",
   "description": "A simple mod that turns your chat into a calculator.",
   "authors": [
-    "RTTV",
-	"Kokeria"
+    "RTTV"
   ],
   "contact": {
     "sources": "https://github.com/RealRTTV/chatcalc"

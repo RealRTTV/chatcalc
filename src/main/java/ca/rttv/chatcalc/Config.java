@@ -58,11 +58,15 @@ public class Config {
     }
 
     public static double convertFromDegrees(double value) {
-        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value);
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? Math.toRadians(value) : value;
     }
 
     public static double convertFromRadians(double value) {
         return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toDegrees(value);
+    }
+
+    public static double convertToRadians(double value) {
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value);
     }
 
     public static boolean radians() {

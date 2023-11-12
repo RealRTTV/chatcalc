@@ -1,6 +1,8 @@
 package ca.rttv.chatcalc;
 
+import com.google.common.collect.Streams;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 import java.nio.charset.StandardCharsets;
@@ -22,8 +24,8 @@ public class NibbleMathEngine implements MathEngine {
         x = pos.x;
         y = pos.y;
         z = pos.z;
-        yaw = Config.convertFromRadians(client.player.getYaw());
-        pitch = Config.convertFromRadians(client.player.getPitch());
+        yaw = Config.convertFromDegrees(MathHelper.wrapDegrees(client.player.getYaw()));
+        pitch = Config.convertFromDegrees(MathHelper.wrapDegrees(client.player.getPitch()));
         double result = expression(false);
         if (idx + 1 != bytes.length) {
             throw new IllegalArgumentException("Evaluation had unexpected remaining characters");
@@ -71,8 +73,12 @@ public class NibbleMathEngine implements MathEngine {
     private double modulo(boolean abs) {
         double x = term(abs);
         while (true) {
-            if (bite('%')) x %= term(abs);
-            else return x;
+            if (bite('%')) {
+                double b = term(abs);
+                double r = x % b;
+                if (r < 0.0) r += Math.abs(b);
+                x = r;
+            } else return x;
         }
     }
 
@@ -107,38 +113,53 @@ public class NibbleMathEngine implements MathEngine {
 
         a:
         {
+            boolean somethingParsed = false;
             if (bite('(')) {
                 x = expression(false);
+                somethingParsed = true;
                 if (!bite(')')) throw new IllegalArgumentException("Expected closing parenthesis");
             } else if (!abs && bite('|')) {
                 x = Math.abs(expression(true));
+                somethingParsed = true;
                 if (!bite('|')) throw new IllegalArgumentException("Expected closing absolute value character");
             } else if ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.' | bytes[idx] == ',') {
                 int start = idx;
                 while ((bytes[idx] <= '9' & bytes[idx] >= '0') | bytes[idx] == '.' | bytes[idx] == ',') idx++;
                 x = Double.parseDouble(new String(bytes, start, idx - start, StandardCharsets.US_ASCII).replace(",", ""));
-            } else if (bytes[idx] <= 'z' & bytes[idx] >= 'a') {
+                somethingParsed = true;
+            }
+            if (bytes[idx] <= 'z' & bytes[idx] >= 'a') {
                 int start = idx;
                 while (bytes[idx] <= 'z' & bytes[idx] >= 'a' | bytes[idx] == '_') idx++;
                 String func = new String(bytes, start, idx - start, StandardCharsets.US_ASCII);
                 double u = 1.0;
                 b:
                 while (true) {
-                    if (func.startsWith("rand()")) {
+                    if (func.startsWith("random")) {
                         x *= u;
                         u = Math.random();
                         func = func.substring(6);
+                        if (!bite('(')) throw new IllegalArgumentException();
+                        bite(')');
                         continue;
                     }
-                    if (func.startsWith("random()")) {
+                    if (func.startsWith("rand")) {
                         x *= u;
                         u = Math.random();
-                        func = func.substring(6);
+                        func = func.substring(4);
+                        if (!bite('(')) throw new IllegalArgumentException();
+                        bite(')');
                         continue;
                     }
                     if (func.startsWith("rad")) {
                         x *= u;
                         u = Config.radians() ? 1.0 : 57.29577951308232;
+                        func = func.substring(3);
+                        continue;
+                    }
+                    if (func.startsWith("deg")) {
+                        x *= u;
+                        u = Config.radians() ? 0.017453292519943295 : 1.0;
                         func = func.substring(3);
                         continue;
                     }
@@ -197,7 +218,7 @@ public class NibbleMathEngine implements MathEngine {
                         continue;
                     }
                     for (FunctionParameter param : params) {
-                        if (func.startsWith(param.name())) {
+                        if (func.startsWith(param.name()) && Streams.concat(Config.FUNCTIONS.keySet().stream(), MathematicalFunction.FUNCTIONS.keySet().stream()).noneMatch(func::startsWith)) {
                             x *= u;
                             u = param.value();
                             func = func.substring(param.name().length());
@@ -205,7 +226,7 @@ public class NibbleMathEngine implements MathEngine {
                         }
                     }
                     if (func.isEmpty()) {
-                        if (bite('^')) u = Math.pow(u, term(false));
+                        if (bite('^')) u = Math.pow(u, part(false));
                         x *= u;
                         break a;
                     }
@@ -222,7 +243,7 @@ public class NibbleMathEngine implements MathEngine {
                 }
                 int param_count = 1;
                 double exponent = 1.0;
-                if (bite('^')) exponent = term(false);
+                if (bite('^')) exponent = part(false);
                 if (!bite('(')) throw new IllegalArgumentException("Expected parenthesis for function");
                 int depth = 0;
                 int before = idx;
@@ -240,14 +261,18 @@ public class NibbleMathEngine implements MathEngine {
                     if (bite('\0')) throw new IllegalArgumentException("Expected closing parenthesis for function");
                     values[value_count++] = expression(false);
                     if (bite(')')) break;
-                    if (!bite(';')) throw new AssertionError("Expected that a semicolon exists between the parameters");
+                    if (!bite(';')) throw new IllegalArgumentException("Expected that a semicolon exists between the parameters");
                 }
                 x *= Math.pow(new MathematicalFunction(func).apply(values), exponent);
-            } else
+                somethingParsed = true;
+            }
+
+            if (!somethingParsed) {
                 throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
+            }
         }
 
-        if (bite('^')) x = Math.pow(x, term(false));
+        if (bite('^')) x = Math.pow(x, part(false));
 
         return Double.longBitsToDouble(Double.doubleToLongBits(x) | sign);
     }

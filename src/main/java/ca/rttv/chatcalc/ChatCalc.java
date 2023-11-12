@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Contract;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ChatCalc {
     public static final Pattern NUMBER = Pattern.compile("[-+]?\\d+(\\.\\d+)?");
@@ -30,11 +31,18 @@ public class ChatCalc {
                 } else {
                     Optional<CallableFunction> func = CallableFunction.fromString(text);
                     if (func.isPresent()) {
-                        Config.FUNCTIONS.put(func.get().name(), func.get());
+                        if (func.get().rest().isEmpty()) {
+                            if (Config.FUNCTIONS.containsKey(func.get().name())) {
+                                Config.FUNCTIONS.remove(func.get().name());
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            Config.FUNCTIONS.put(func.get().name(), func.get());
+                        }
                         Config.refreshJson();
                         return ChatHelper.replaceWord(field, "");
                     }
-                    ;
                 }
             } else if (split.length == 1) {
                 if (Config.JSON.has(split[0])) {
@@ -48,6 +56,12 @@ public class ChatCalc {
         
         if ((text.equals("config?") || text.equals("cfg?") || text.equals("?")) && client.player != null) {
             client.player.sendMessage(Text.translatable("chatcalc.config.description"));
+            return false;
+        } else if (text.equals("testcases?")) {
+            Testcases.test(Testcases.TESTCASES);
+            return false;
+        } else if (text.equals("functions?")) {
+            client.player.sendMessage(Text.literal("Currently defined custom functions are:\n" + Config.FUNCTIONS.values().stream().map(CallableFunction::toString).collect(Collectors.joining("\n"))));
             return false;
         } else if (NUMBER.matcher(text).matches()) {
             return false;
