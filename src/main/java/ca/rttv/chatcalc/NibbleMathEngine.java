@@ -2,27 +2,28 @@ package ca.rttv.chatcalc;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class NibbleMathEngine implements MathEngine {
     byte[] bytes;
     int idx;
     FunctionParameter[] params;
-    double x, y, z;
+    double x, y, z, yaw, pitch;
 
     @Override
     public double eval(String input, FunctionParameter[] paramaters) {
+        final MinecraftClient client = MinecraftClient.getInstance();
         bytes = fixParenthesis(input).concat("\0").getBytes(StandardCharsets.US_ASCII); // we shouldn't encounter unicode in our math
         idx = 0;
         params = paramaters;
         //noinspection DataFlowIssue -- player != null when the chat != null
-        Vec3d pos = MinecraftClient.getInstance().player.getPos();
+        Vec3d pos = client.player.getPos();
         x = pos.x;
         y = pos.y;
         z = pos.z;
+        yaw = Config.convertFromRadians(client.player.getYaw());
+        pitch = Config.convertFromRadians(client.player.getPitch());
         double result = expression(false);
         if (idx + 1 != bytes.length) {
             throw new IllegalArgumentException("Evaluation had unexpected remaining characters");
@@ -123,6 +124,18 @@ public class NibbleMathEngine implements MathEngine {
                 double u = 1.0;
                 b:
                 while (true) {
+                    if (func.startsWith("yaw")) {
+                        x *= u;
+                        u = this.yaw;
+                        func = func.substring(4);
+                        continue;
+                    }
+                    if (func.startsWith("pitch")) {
+                        x *= u;
+                        u = this.pitch;
+                        func = func.substring(4);
+                        continue;
+                    }
                     if (func.startsWith("pi")) {
                         x *= u;
                         u = Math.PI;
@@ -162,7 +175,7 @@ public class NibbleMathEngine implements MathEngine {
                         }
                     }
                     if (func.isEmpty()) {
-                        if (bite('^')) u = Math.pow(u, part(false));
+                        if (bite('^')) u = Math.pow(u, term(false));
                         x *= u;
                         break a;
                     }
@@ -179,7 +192,7 @@ public class NibbleMathEngine implements MathEngine {
                 }
                 int param_count = 1;
                 double exponent = 1.0;
-                if (bite('^')) exponent = part(false);
+                if (bite('^')) exponent = term(false);
                 if (!bite('(')) throw new IllegalArgumentException("Expected parenthesis for function");
                 int depth = 0;
                 int before = idx;
@@ -204,7 +217,7 @@ public class NibbleMathEngine implements MathEngine {
                 throw new IllegalArgumentException("Expected a valid character for equation, not " + (char) bytes[idx]);
         }
 
-        if (bite('^')) x = Math.pow(x, part(false));
+        if (bite('^')) x = Math.pow(x, term(false));
 
         return Double.longBitsToDouble(Double.doubleToLongBits(x) | sign);
     }

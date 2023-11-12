@@ -1,14 +1,10 @@
 package ca.rttv.chatcalc;
 
-import com.mojang.logging.LogUtils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Contract;
-import org.slf4j.Logger;
-import oshi.util.tuples.Triplet;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -24,28 +20,30 @@ public class ChatCalc {
         String originalText = field.getText();
         int cursor = field.getCursor();
         String text = ChatHelper.getWord(originalText, cursor);
-        String[] split = text.split("=");
-        if (split.length == 0) {
-            return false;
-        }
-        if (split.length == 2) {
-            if (Config.JSON.has(split[0])) {
-                Config.JSON.addProperty(split[0], split[1]);
-                Config.refreshJson();
-                return ChatHelper.replaceWord(field, "");
-            } else {
-                Optional<CallableFunction> func = CallableFunction.fromString(text);
-                if (func.isPresent()) {
-                    Config.FUNCTIONS.put(func.get().name(), func.get());
+        {
+            String[] split = text.split("=");
+            if (split.length == 2) {
+                if (Config.JSON.has(split[0])) {
+                    Config.JSON.addProperty(split[0], split[1]);
                     Config.refreshJson();
                     return ChatHelper.replaceWord(field, "");
-                };
+                } else {
+                    Optional<CallableFunction> func = CallableFunction.fromString(text);
+                    if (func.isPresent()) {
+                        Config.FUNCTIONS.put(func.get().name(), func.get());
+                        Config.refreshJson();
+                        return ChatHelper.replaceWord(field, "");
+                    }
+                    ;
+                }
+            } else if (split.length == 1) {
+                if (Config.JSON.has(split[0])) {
+                    return ChatHelper.replaceWord(field, Config.JSON.get(split[0]).getAsString());
+                } else if (!split[0].isEmpty() && Config.JSON.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
+                    client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
+                    return false;
+                }
             }
-        } else if (Config.JSON.has(split[0])) {
-            return ChatHelper.replaceWord(field, Config.JSON.get(split[0]).getAsString());
-        } else if (!split[0].isEmpty() && Config.JSON.has(split[0].substring(0, split[0].length() - 1)) && split[0].endsWith("?") && client.player != null) {
-            client.player.sendMessage(Text.translatable("chatcalc." + split[0].substring(0, split[0].length() - 1) + ".description"));
-            return false;
         }
         
         if ((text.equals("config?") || text.equals("cfg?") || text.equals("?")) && client.player != null) {

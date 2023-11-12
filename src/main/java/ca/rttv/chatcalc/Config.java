@@ -3,14 +3,11 @@ package ca.rttv.chatcalc;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Pair;
-import oshi.util.tuples.Triplet;
 
 import java.io.*;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Config {
@@ -60,8 +57,12 @@ public class Config {
         return new DecimalFormat(JSON.get("decimal_format").getAsString());
     }
 
-    public static double convertIfRadians(double value) {
-        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value); // sine takes in radians, so we have to do inverse, if we have radians, it'll convert, if we don't, we need to cancel out
+    public static double convertFromDegrees(double value) {
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toRadians(value);
+    }
+
+    public static double convertFromRadians(double value) {
+        return Boolean.parseBoolean(JSON.get("radians").getAsString()) ? value : Math.toDegrees(value);
     }
 
     public static void refreshJson() {

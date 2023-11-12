@@ -11,18 +11,32 @@ public final class MathematicalFunction {
         functions = new HashMap<>();
         functions.put("sqrt", Math::sqrt);
         functions.put("cbrt", Math::cbrt);
-        functions.put("sin", val -> Math.sin(Config.convertIfRadians(val)));
-        functions.put("asin", val -> Math.asin(Config.convertIfRadians(val)));
-        functions.put("arcsin", val -> Math.asin(Config.convertIfRadians(val)));
-        functions.put("cos", val -> Math.cos(Config.convertIfRadians(val)));
-        functions.put("acos", val -> Math.acos(Config.convertIfRadians(val)));
-        functions.put("arccos", val -> Math.acos(Config.convertIfRadians(val)));
-        functions.put("tan", val -> Math.tan(Config.convertIfRadians(val)));
-        functions.put("atan", val -> Math.atan(Config.convertIfRadians(val)));
-        functions.put("arctan", val -> Math.atan(Config.convertIfRadians(val)));
-        functions.put("sec", val -> 1 / Math.cos(Config.convertIfRadians(val)));
-        functions.put("csc", val -> 1 / Math.sin(Config.convertIfRadians(val)));
-        functions.put("cot", val -> 1 / Math.tan(Config.convertIfRadians(val)));
+
+        functions.put("sin", val -> Math.sin(Config.convertFromDegrees(val)));
+        functions.put("cos", val -> Math.cos(Config.convertFromDegrees(val)));
+        functions.put("tan", val -> Math.tan(Config.convertFromDegrees(val)));
+        functions.put("csc", val -> 1 / Math.sin(Config.convertFromDegrees(val)));
+        functions.put("sec", val -> 1 / Math.cos(Config.convertFromDegrees(val)));
+        functions.put("cot", val -> 1 / Math.tan(Config.convertFromDegrees(val)));
+
+        functions.put("arcsin", val -> Config.convertFromRadians(Math.asin(val)));
+        functions.put("asin", val -> Config.convertFromRadians(Math.asin(val)));
+
+        functions.put("acos", val -> Config.convertFromRadians(Math.acos(val)));
+        functions.put("arccos", val -> Config.convertFromRadians(Math.acos(val)));
+
+        functions.put("atan", val -> Config.convertFromRadians(Math.atan(val)));
+        functions.put("arctan", val -> Config.convertFromRadians(Math.atan(val)));
+
+        functions.put("arccsc", val -> Config.convertFromRadians(Math.asin(1 / val)));
+        functions.put("acsc", val -> Config.convertFromRadians(Math.asin(1/ val)));
+
+        functions.put("arcsec", val -> Config.convertFromRadians(Math.acos(1 / val)));
+        functions.put("asec", val -> Config.convertFromRadians(Math.acos(1/ val)));
+
+        functions.put("arccot", val -> Config.convertFromRadians(Math.atan(1 / val)));
+        functions.put("acot", val -> Config.convertFromRadians(Math.atan(1/ val)));
+
         functions.put("floor", Math::floor);
         functions.put("ceil", Math::ceil);
         functions.put("round", x -> Math.floor(x + 0.5d));

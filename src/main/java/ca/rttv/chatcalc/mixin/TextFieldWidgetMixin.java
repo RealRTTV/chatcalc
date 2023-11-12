@@ -23,21 +23,19 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 abstract class TextFieldWidgetMixin {
     @Shadow @Final private TextRenderer textRenderer;
 
-    @Shadow private String text;
-
     @Shadow public native int getCursor();
+
+    @Shadow public native String getText();
 
     @Unique
     @Nullable
     private Pair<String, Double> evaluationCache;
 
-    // 1.20.2
     @Inject(method = "renderButton", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Ljava/lang/String;isEmpty()Z", ordinal = 1), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void renderButton1202(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, int i, int j, String string, boolean bl, boolean bl2, int k, int l, int m, int n, boolean bl3, int o) {
         chatcalc$displayAbove(context, o, l);
     }
 
-//    // 1.20.1
 //    @Inject(method = "renderButton", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Ljava/lang/String;isEmpty()Z", ordinal = 1), locals = LocalCapture.CAPTURE_FAILSOFT)
 //    private void renderButton1201(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci, int i, int j, int k, String string, boolean bl, boolean bl2, int l, int m, int n, boolean bl3, int o) {
 //        chatcalc$displayAbove(context, o, m);
@@ -49,7 +47,7 @@ abstract class TextFieldWidgetMixin {
             return;
         }
 
-        String word = ChatHelper.getWord(text, getCursor());
+        String word = ChatHelper.getWord(getText(), getCursor());
 
         if (ChatCalc.NUMBER.matcher(word).matches()) {
             return;

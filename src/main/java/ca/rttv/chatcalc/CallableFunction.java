@@ -1,8 +1,6 @@
 package ca.rttv.chatcalc;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public record CallableFunction(String name, String rest, String[] params) {
     public static Optional<CallableFunction> fromString(String str) {
