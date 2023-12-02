@@ -56,6 +56,8 @@ public final class MathematicalFunction {
         FUNCTIONS.put("sgn", simple(x -> Double.isNaN(x) || x + 0.0 == 0.0 ? 0.0 : (x >= 0.0 ? 1.0 : -1.0)));
         FUNCTIONS.put("min", values -> DoubleStream.of(values).min());
         FUNCTIONS.put("max", values -> DoubleStream.of(values).max());
+        FUNCTIONS.put("gcf", values -> DoubleStream.of(values).reduce(MathematicalFunction::gcf));
+        FUNCTIONS.put("lcm", values -> DoubleStream.of(values).reduce(MathematicalFunction::lcm));
         FUNCTIONS.put("clamp", values -> values.length == 3 ? OptionalDouble.of(MathHelper.clamp(values[0], values[1], values[2])) : OptionalDouble.empty());
         FUNCTIONS.put("cmp", values -> (values.length >= 2 && values.length <= 3) ? OptionalDouble.of((Math.abs(values[0] - values[1]) <= (values.length == 2 ? 0.0 : values[2])) ? 0.0d : (values[0] < values[1] ? -1.0d : (values[0] > values[1] ? 1.0d : 0.0d))) : OptionalDouble.empty());
     }
@@ -75,8 +77,32 @@ public final class MathematicalFunction {
         return Optional.ofNullable(FUNCTIONS.get(func)).map(function -> function.apply(values).orElseThrow(IllegalArgumentException::new)).orElseGet(() -> Config.func(func, values));
     }
 
+    public static double gcf(double a, double b) {
+        if (b > a) {
+            double t = a;
+            a = b;
+            b = t;
+        }
+
+        while (b != 0.0d) {
+            double t = b;
+            b = mod(a, b);
+            a = t;
+        }
+
+        return a;
+    }
+
+    public static double lcm(double a, double b) {
+        return (a * b) / gcf(a, b);
+    }
+
     public static double log(double base, double value) {
         return Math.log(value) / Math.log(base);
+    }
+
+    public static double mod(double a, double b) {
+        return a % b + (((Double.doubleToLongBits(a) >>> 63) ^ (Double.doubleToLongBits(b) >>> 63)) > 0 ? b : 0);
     }
 
     public static double factorial(double x) {

@@ -5,6 +5,7 @@ import com.google.common.collect.Streams;
 import java.nio.charset.StandardCharsets;
 
 import static ca.rttv.chatcalc.MathematicalFunction.factorial;
+import static ca.rttv.chatcalc.MathematicalFunction.mod;
 
 public class NibbleMathEngine implements MathEngine {
     byte[] bytes;
@@ -65,7 +66,7 @@ public class NibbleMathEngine implements MathEngine {
     private double modulo() {
         double x = term();
         while (true) {
-            if (bite('%')) x = Math.IEEEremainder(x, term());
+            if (bite('%')) x = mod(x, term());
             else return x;
         }
     }
