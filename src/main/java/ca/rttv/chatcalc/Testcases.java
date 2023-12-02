@@ -54,8 +54,9 @@ public interface Testcases {
             new Pair<>("|-2.5-0.1|", 2.6d),
             new Pair<>("0.5|-2.5-0.1|", 1.3d),
             new Pair<>("5%360", 5.0d),
-            new Pair<>("-5%360", -5.0d),
-            // add the two remaining signed ones
+            new Pair<>("-5%360", 355.0d),
+            new Pair<>("5%-360", -355.0d),
+            new Pair<>("-5%-360", -5.0d),
             new Pair<>("min(sqrt(37);6", 6.0d),
             new Pair<>("max(sqrt(37);7", 7.0d),
             new Pair<>("max(sqrt(2);sqrt(3);sqrt(5);sqrt(7);sqrt(11);sqrt(13);sqrt(17);sqrt(19);sqrt(23);sqrt(29);sqrt(31);sqrt(37);sqrt(41", (double) MathHelper.sqrt(41)),
@@ -64,7 +65,9 @@ public interface Testcases {
             new Pair<>("clamp(pi;-2;4)", Math.PI),
             new Pair<>("cmp(-2;3)", -1.0d),
             new Pair<>("cmp(5;3)", 1.0d),
-            new Pair<>("cmp(5;3;5)", 0.0d)
+            new Pair<>("cmp(5;3;5)", 0.0d),
+            new Pair<>("gcf(4;2)", 2.0d),
+            new Pair<>("lcm(6;9)", 18.0d)
     );
 
     static void test(List<Pair<String, Double>> list) {

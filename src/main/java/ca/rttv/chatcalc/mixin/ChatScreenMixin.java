@@ -22,7 +22,7 @@ abstract class ChatScreenMixin {
 
     @Inject(at = @At("HEAD"), method = "keyPressed(III)Z", cancellable = true)
     private void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (!Config.calculateLast() || ((ChatInputSuggesterDuck) this.chatInputSuggestor).chatcalc$pendingSuggestions().join().isEmpty()) {
+        if (((ChatInputSuggesterDuck) this.chatInputSuggestor).chatcalc$pendingSuggestions().join().isEmpty()) {
             if (keyCode == 258 && ChatCalc.tryParse(chatField)) {
                 cir.setReturnValue(true);
             }

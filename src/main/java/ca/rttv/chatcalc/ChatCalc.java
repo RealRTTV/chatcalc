@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 public class ChatCalc {
     public static final Pattern NUMBER = Pattern.compile("[-+]?(\\d,?)+(\\.\\d+)?");
-    public static final Pattern FUNCTION = Pattern.compile("[a-zA-Z]+\\(([a-zA-Z]+,)*?([a-zA-Z]+)\\)");
+    public static final Pattern FUNCTION = Pattern.compile("[a-zA-Z]+\\(([a-zA-Z]+;)*?([a-zA-Z]+)\\)");
     public static final Pattern CONSTANT = Pattern.compile("[a-zA-Z]+");
     public static final String SEPARATOR = ";";
     public static final char SEPARATOR_CHAR = ';';

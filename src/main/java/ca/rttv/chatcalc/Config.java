@@ -22,8 +22,7 @@ public class Config {
         DEFAULTS = ImmutableMap.<String, String>builder()
                 .put("decimal_format", "#,##0.##")
                 .put("radians", "false")
-                .put("copy_type", "none")
-                .put("calculate_last", "true")
+                .put("copy_type", "chat_history")
                 .put("display_above", "true")
                 .build();
         CONFIG_FILE = new File(".", "config/chatcalc.json");
@@ -49,10 +48,6 @@ public class Config {
         if (CONFIG_FILE.exists() && CONFIG_FILE.isFile() && CONFIG_FILE.canRead()) {
             readJson();
         }
-    }
-
-    public static boolean calculateLast() {
-        return Boolean.parseBoolean(JSON.get("calculate_last").getAsString());
     }
 
     public static DecimalFormat getDecimalFormat() {
