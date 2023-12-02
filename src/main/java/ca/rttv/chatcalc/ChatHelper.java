@@ -3,15 +3,15 @@ package ca.rttv.chatcalc;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 public class ChatHelper {
-    public static String getWord(String input, int cursor) {
-        return input.substring(ChatHelper.getStartOfWord(input, cursor), ChatHelper.getEndOfWord(input, cursor));
+    public static String getSection(String input, int cursor) {
+        return input.substring(ChatHelper.getStartOfSection(input, cursor), ChatHelper.getEndOfSection(input, cursor));
     }
 
-    public static boolean replaceWord(TextFieldWidget field, String replacement) {
+    public static boolean replaceSection(TextFieldWidget field, String replacement) {
         String input = field.getText();
         int cursor = field.getCursor();
-        int start = ChatHelper.getStartOfWord(input, cursor);
-        int end = ChatHelper.getEndOfWord(input, cursor);
+        int start = ChatHelper.getStartOfSection(input, cursor);
+        int end = ChatHelper.getEndOfSection(input, cursor);
         String output = input.substring(0, start) + replacement + input.substring(end);
         if (output.length() > 256 || input.substring(start, end).equals(replacement)) {
             return false;
@@ -20,9 +20,9 @@ public class ChatHelper {
         return true;
     }
 
-    public static boolean addWordAfterIndex(TextFieldWidget field, String word) {
+    public static boolean addSectionAfterIndex(TextFieldWidget field, String word) {
         String input = field.getText();
-        int index = ChatHelper.getEndOfWord(input, field.getCursor());
+        int index = ChatHelper.getEndOfSection(input, field.getCursor());
         String output = input.substring(0, index) + word + input.substring(index);
         if (output.length() > 256) {
             return false;
@@ -31,7 +31,7 @@ public class ChatHelper {
         return true;
     }
 
-    public static int getStartOfWord(String input, int cursor) {
+    public static int getStartOfSection(String input, int cursor) {
         if (cursor == 0) {
             return 0;
         }
@@ -46,7 +46,7 @@ public class ChatHelper {
         return 0;
     }
 
-    public static int getEndOfWord(String input, int cursor) {
+    public static int getEndOfSection(String input, int cursor) {
         if (cursor == input.length() - 1) {
             return cursor;
         }

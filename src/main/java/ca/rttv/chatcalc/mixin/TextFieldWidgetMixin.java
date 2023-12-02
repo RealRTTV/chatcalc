@@ -6,8 +6,10 @@ import ca.rttv.chatcalc.Config;
 import ca.rttv.chatcalc.FunctionParameter;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -20,7 +22,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(TextFieldWidget.class)
-abstract class TextFieldWidgetMixin {
+abstract class TextFieldWidgetMixin extends ClickableWidget {
+    public TextFieldWidgetMixin(int x, int y, int width, int height, Text message) {
+        super(x, y, width, height, message);
+    }
+
     @Shadow @Final private TextRenderer textRenderer;
 
     @Shadow public native int getCursor();
@@ -43,12 +49,16 @@ abstract class TextFieldWidgetMixin {
 
     @Unique
     private void chatcalc$displayAbove(DrawContext context, int x, int y) {
+        if (!(getMessage().getContent() instanceof TranslatableTextContent translatable && translatable.getKey().equals("chat.editBox"))) {
+            return;
+        }
+
         if (!Config.displayAbove()) {
             evaluationCache = null;
             return;
         }
 
-        String word = ChatHelper.getWord(getText(), getCursor());
+        String word = ChatHelper.getSection(getText(), getCursor());
 
         if (ChatCalc.NUMBER.matcher(word).matches()) {
             evaluationCache = null;

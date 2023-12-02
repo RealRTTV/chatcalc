@@ -1,56 +1,63 @@
 package ca.rttv.chatcalc;
 
+import com.google.common.math.DoubleMath;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
+import java.util.stream.DoubleStream;
 
 public final class MathematicalFunction {
-    public static final Map<String, DoubleUnaryOperator> FUNCTIONS;
+    public static final Map<String, Function<double[], OptionalDouble>> FUNCTIONS;
 
     static {
         FUNCTIONS = new HashMap<>();
-        FUNCTIONS.put("sqrt", Math::sqrt);
-        FUNCTIONS.put("cbrt", Math::cbrt);
 
-        FUNCTIONS.put("sin", val -> Math.sin(Config.convertToRadians(val)));
-        FUNCTIONS.put("cos", val -> Math.cos(Config.convertToRadians(val)));
-        FUNCTIONS.put("tan", val -> Math.tan(Config.convertToRadians(val)));
-        FUNCTIONS.put("csc", val -> 1 / Math.sin(Config.convertToRadians(val)));
-        FUNCTIONS.put("sec", val -> 1 / Math.cos(Config.convertToRadians(val)));
-        FUNCTIONS.put("cot", val -> 1 / Math.tan(Config.convertToRadians(val)));
+        FUNCTIONS.put("sqrt", simple(Math::sqrt));
+        FUNCTIONS.put("cbrt", simple(Math::cbrt));
 
-        FUNCTIONS.put("arcsin", val -> Config.convertFromRadians(Math.asin(val)));
-        FUNCTIONS.put("asin", val -> Config.convertFromRadians(Math.asin(val)));
+        FUNCTIONS.put("sin", simple(val -> Math.sin(Config.convertToRadians(val))));
+        FUNCTIONS.put("cos", simple(val -> Math.cos(Config.convertToRadians(val))));
+        FUNCTIONS.put("tan", simple(val -> Math.tan(Config.convertToRadians(val))));
+        FUNCTIONS.put("csc", simple(val -> 1 / Math.sin(Config.convertToRadians(val))));
+        FUNCTIONS.put("sec", simple(val -> 1 / Math.cos(Config.convertToRadians(val))));
+        FUNCTIONS.put("cot", simple(val -> 1 / Math.tan(Config.convertToRadians(val))));
 
-        FUNCTIONS.put("acos", val -> Config.convertFromRadians(Math.acos(val)));
-        FUNCTIONS.put("arccos", val -> Config.convertFromRadians(Math.acos(val)));
+        FUNCTIONS.put("arcsin", simple(val -> Config.convertFromRadians(Math.asin(val))));
+        FUNCTIONS.put("asin", FUNCTIONS.get("arcsin"));
 
-        FUNCTIONS.put("atan", val -> Config.convertFromRadians(Math.atan(val)));
-        FUNCTIONS.put("arctan", val -> Config.convertFromRadians(Math.atan(val)));
+        FUNCTIONS.put("arccos", simple(val -> Config.convertFromRadians(Math.acos(val))));
+        FUNCTIONS.put("acos", FUNCTIONS.get("arccos"));
 
-        FUNCTIONS.put("arccsc", val -> Config.convertFromRadians(Math.asin(1 / val)));
-        FUNCTIONS.put("acsc", val -> Config.convertFromRadians(Math.asin(1/ val)));
+        FUNCTIONS.put("arctan", simple(val -> Config.convertFromRadians(Math.atan(val))));
+        FUNCTIONS.put("atan", FUNCTIONS.get("arctan"));
 
-        FUNCTIONS.put("arcsec", val -> Config.convertFromRadians(Math.acos(1 / val)));
-        FUNCTIONS.put("asec", val -> Config.convertFromRadians(Math.acos(1/ val)));
+        FUNCTIONS.put("arccsc", simple(val -> Config.convertFromRadians(Math.asin(1 / val))));
+        FUNCTIONS.put("acsc", FUNCTIONS.get("arccsc"));
 
-        FUNCTIONS.put("arccot", val -> Config.convertFromRadians(Math.atan(1 / val)));
-        FUNCTIONS.put("acot", val -> Config.convertFromRadians(Math.atan(1/ val)));
+        FUNCTIONS.put("arcsec", simple(val -> Config.convertFromRadians(Math.acos(1 / val))));
+        FUNCTIONS.put("asec", FUNCTIONS.get("arcsec"));
 
-        FUNCTIONS.put("floor", Math::floor);
-        FUNCTIONS.put("ceil", Math::ceil);
-        FUNCTIONS.put("round", x -> Math.floor(x + 0.5d));
-        FUNCTIONS.put("abs", Math::abs);
-        FUNCTIONS.put("log", Math::log10);
-        FUNCTIONS.put("ln", Math::log);
-        FUNCTIONS.put("exp", Math::exp);
+        FUNCTIONS.put("arccot", simple(val -> Config.convertFromRadians(Math.atan(1 / val))));
+        FUNCTIONS.put("acot", FUNCTIONS.get("arccot"));
 
-        FUNCTIONS.put("min", DoubleUnaryOperator.identity());
-        FUNCTIONS.put("max", DoubleUnaryOperator.identity());
-        FUNCTIONS.put("clamp", DoubleUnaryOperator.identity());
-        FUNCTIONS.put("cmp", DoubleUnaryOperator.identity());
+        FUNCTIONS.put("floor", simple(Math::floor));
+        FUNCTIONS.put("ceil", simple(Math::ceil));
+        FUNCTIONS.put("round", simple(x -> Math.floor(x + 0.5d)));
+        FUNCTIONS.put("abs", simple(Math::abs));
+        FUNCTIONS.put("log", simple(Math::log10));
+        FUNCTIONS.put("ln", simple(Math::log));
+        FUNCTIONS.put("exp", simple(Math::exp));
+
+        FUNCTIONS.put("sgn", simple(x -> Double.isNaN(x) || x + 0.0 == 0.0 ? 0.0 : (x >= 0.0 ? 1.0 : -1.0)));
+        FUNCTIONS.put("min", values -> DoubleStream.of(values).min());
+        FUNCTIONS.put("max", values -> DoubleStream.of(values).max());
+        FUNCTIONS.put("clamp", values -> values.length == 3 ? OptionalDouble.of(MathHelper.clamp(values[0], values[1], values[2])) : OptionalDouble.empty());
+        FUNCTIONS.put("cmp", values -> (values.length >= 2 && values.length <= 3) ? OptionalDouble.of((Math.abs(values[0] - values[1]) <= (values.length == 2 ? 0.0 : values[2])) ? 0.0d : (values[0] < values[1] ? -1.0d : (values[0] > values[1] ? 1.0d : 0.0d))) : OptionalDouble.empty());
     }
 
     public final String func;
@@ -65,65 +72,29 @@ public final class MathematicalFunction {
     }
 
     public double apply(double... values) {
-        if (func.equals("cmp")) {
-            if (values.length < 2 || values.length > 3) {
-                throw new IllegalArgumentException();
-            }
-            double epsilon = values.length == 2 ? 0.0 : values[2];
-            double a = values[0];
-            double b = values[1];
-            if (Math.abs(a - b) <= epsilon) {
-                return 0.0;
-            } else if (a < b) {
-                return -1.0;
-            } else if (a > b) {
-                return 1.0;
-            } else {
-                return 0.0;
-            }
-        }
-
-        if (func.equals("min")) {
-            if (values.length == 0) {
-                throw new IllegalArgumentException();
-            }
-            double min = values[0];
-            for (double value : values) {
-                min = Math.min(min, value);
-            }
-            return min;
-        }
-
-        if (func.equals("max")) {
-            if (values.length == 0) {
-                throw new IllegalArgumentException();
-            }
-            double max = values[0];
-            for (double value : values) {
-                max = Math.max(max, value);
-            }
-            return max;
-        }
-
-        if (func.equals("clamp")) {
-            if (values.length != 3) {
-                throw new IllegalArgumentException();
-            }
-            return MathHelper.clamp(values[0], values[1], values[2]);
-        }
-
-        if (FUNCTIONS.containsKey(func)) {
-            if (values.length != 1) {
-                throw new IllegalArgumentException();
-            }
-
-            return FUNCTIONS.get(func).applyAsDouble(values[0]);
-        } else {
-            return Config.func(func, values);
-        }
+        return Optional.ofNullable(FUNCTIONS.get(func)).map(function -> function.apply(values).orElseThrow(IllegalArgumentException::new)).orElseGet(() -> Config.func(func, values));
     }
 
     public static double log(double base, double value) {
         return Math.log(value) / Math.log(base);
+    }
+
+    public static double factorial(double x) {
+        return x % 1.0d == 0.0d & x >= 1.0d
+                ? DoubleMath.factorial((int) x)
+                : Math.sqrt(2.0 * Math.PI * x)
+                * Math.pow(x / Math.E, x)
+                * (1.0d
+                + 1.0d / (12.0d * x)
+                + 1.0d / (288.0d * x * x)
+                - 139.0d / (51840.0d * x * x * x)
+                - 571.0d / (2488320.0d * x * x * x * x)
+                + 163879.0d / (209018880.0d * x * x * x * x * x)
+                + 5246819.0d / (75246796800.0d * x * x * x * x * x * x)
+                + -534703531.0d / (902961561600.0d * x * x * x * x * x * x * x));
+    }
+
+    private static Function<double[], OptionalDouble> simple(DoubleUnaryOperator simple) {
+        return values -> values.length == 1 ? OptionalDouble.of(simple.applyAsDouble(values[0])) : OptionalDouble.empty();
     }
 }

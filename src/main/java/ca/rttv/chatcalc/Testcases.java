@@ -54,7 +54,7 @@ public interface Testcases {
             new Pair<>("|-2.5-0.1|", 2.6d),
             new Pair<>("0.5|-2.5-0.1|", 1.3d),
             new Pair<>("5%360", 5.0d),
-            new Pair<>("-5%360", 355.0d),
+            new Pair<>("-5%360", -5.0d),
             // add the two remaining signed ones
             new Pair<>("min(sqrt(37);6", 6.0d),
             new Pair<>("max(sqrt(37);7", 7.0d),
@@ -79,7 +79,7 @@ public interface Testcases {
                     client.player.sendMessage(Text.literal("§cTest case §n§cfailed: " + entry.getLeft() + ", expected " + entry.getRight() + ", got " + result));
                 }
             } catch (Exception e) {
-                client.player.sendMessage(Text.literal("§aTest case failed with exception: " + entry.getLeft() + ", expected " + entry.getRight() + ", got " + e));
+                client.player.sendMessage(Text.literal("§cTest case failed with exception: " + entry.getLeft() + ", expected " + entry.getRight() + ", got " + e));
             }
         }
     }

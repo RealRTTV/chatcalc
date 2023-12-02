@@ -14,7 +14,8 @@ public class Config {
     public static final JsonObject JSON;
     public static final Gson GSON;
     public static final File CONFIG_FILE;
-    public static final Map<String, CallableFunction> FUNCTIONS;
+    public static final Map<String, CustomFunction> FUNCTIONS;
+    public static final Map<String, CustomConstant> CONSTANTS;
     public static final ImmutableMap<String, String> DEFAULTS;
 
     static {
@@ -44,6 +45,7 @@ public class Config {
             } catch (IOException ignored) {}
         }
         FUNCTIONS = new HashMap<>();
+        CONSTANTS = new HashMap<>();
         if (CONFIG_FILE.exists() && CONFIG_FILE.isFile() && CONFIG_FILE.canRead()) {
             readJson();
         }
@@ -77,8 +79,10 @@ public class Config {
         try {
             FileWriter writer = new FileWriter(CONFIG_FILE);
             JSON.add("functions", FUNCTIONS.values().stream().map(Object::toString).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
+            JSON.add("constants", CONSTANTS.values().stream().map(Object::toString).collect(JsonArray::new, JsonArray::add, JsonArray::addAll));
             writer.write(GSON.toJson(JSON));
             JSON.remove("functions");
+            JSON.remove("constants");
             writer.close();
         } catch (Exception ignored) { }
     }
@@ -97,9 +101,16 @@ public class Config {
             if (json.obj.get("functions") instanceof JsonArray array) {
                 array.forEach(e -> {
                     if (e instanceof JsonPrimitive primitive && primitive.isString()) {
-                        CallableFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(func.name(), func));
+                        CustomFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(func.name(), func));
                     }
                 });
+            }
+            if (json.obj.get("constants") instanceof JsonArray array) {
+                for (JsonElement e : array) {
+                    if (e instanceof JsonPrimitive primitive && primitive.isString()) {
+                        CustomConstant.fromString(e.getAsString()).ifPresent(constant -> CONSTANTS.put(constant.name(), constant));
+                    }
+                }
             }
         } catch (Exception ignored) { }
     }
@@ -114,12 +125,12 @@ public class Config {
     }
 
     public static double func(String name, double... values) {
-        CallableFunction func = FUNCTIONS.get(name);
+        CustomFunction func = FUNCTIONS.get(name);
         if (func != null) {
             if (values.length != func.params().length) {
                 throw new IllegalArgumentException("Invalid amount of arguments for custom function");
             }
-            String input = func.rest();
+            String input = func.eval();
             FunctionParameter[] parameters = new FunctionParameter[values.length];
             for (int i = 0; i < parameters.length; i++) {
                 parameters[i] = new FunctionParameter(func.params()[i], values[i]);
