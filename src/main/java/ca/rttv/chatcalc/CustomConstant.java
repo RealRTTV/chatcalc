@@ -20,8 +20,15 @@ public record CustomConstant(String name, String eval) {
         return Optional.of(new CustomConstant(lhs, rhs));
     }
 
-    public double value() {
-        return Config.makeEngine().eval(eval, new FunctionParameter[0]);
+    public double get() {
+        if (ChatCalc.CONSTANT_TABLE.contains(name)) {
+            throw new IllegalArgumentException("Tried to compute constant a second time, recursively");
+        } else {
+            ChatCalc.CONSTANT_TABLE.add(name);
+            double value = Config.makeEngine().eval(eval, new FunctionParameter[0]);
+            ChatCalc.CONSTANT_TABLE.remove(name);
+            return value;
+        }
     }
 
     @Override

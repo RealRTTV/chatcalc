@@ -2,6 +2,7 @@ package ca.rttv.chatcalc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.MinecraftClient;
 
 import java.io.*;
@@ -14,7 +15,7 @@ public class Config {
     public static final JsonObject JSON;
     public static final Gson GSON;
     public static final File CONFIG_FILE;
-    public static final Map<String, CustomFunction> FUNCTIONS;
+    public static final Map<Pair<String, Integer>, CustomFunction> FUNCTIONS;
     public static final Map<String, CustomConstant> CONSTANTS;
     public static final ImmutableMap<String, String> DEFAULTS;
 
@@ -96,7 +97,7 @@ public class Config {
             if (json.obj.get("functions") instanceof JsonArray array) {
                 array.forEach(e -> {
                     if (e instanceof JsonPrimitive primitive && primitive.isString()) {
-                        CustomFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(func.name(), func));
+                        CustomFunction.fromString(e.getAsString()).ifPresent(func -> FUNCTIONS.put(new Pair<>(func.name(), func.params().length), func));
                     }
                 });
             }
@@ -120,17 +121,9 @@ public class Config {
     }
 
     public static double func(String name, double... values) {
-        CustomFunction func = FUNCTIONS.get(name);
+        CustomFunction func = FUNCTIONS.get(new Pair<>(name, values.length));
         if (func != null) {
-            if (values.length != func.params().length) {
-                throw new IllegalArgumentException("Invalid amount of arguments for custom function");
-            }
-            String input = func.eval();
-            FunctionParameter[] parameters = new FunctionParameter[values.length];
-            for (int i = 0; i < parameters.length; i++) {
-                parameters[i] = new FunctionParameter(func.params()[i], values[i]);
-            }
-            return Config.makeEngine().eval(input, parameters);
+            return func.get(values);
         } else {
             throw new IllegalArgumentException("Tried to call unknown function: " + name);
         }

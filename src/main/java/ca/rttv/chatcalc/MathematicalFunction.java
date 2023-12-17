@@ -117,7 +117,7 @@ public final class MathematicalFunction {
                 - 571.0d / (2488320.0d * x * x * x * x)
                 + 163879.0d / (209018880.0d * x * x * x * x * x)
                 + 5246819.0d / (75246796800.0d * x * x * x * x * x * x)
-                + -534703531.0d / (902961561600.0d * x * x * x * x * x * x * x));
+                - 534703531.0d / (902961561600.0d * x * x * x * x * x * x * x));
     }
 
     private static Function<double[], OptionalDouble> simple(DoubleUnaryOperator simple) {

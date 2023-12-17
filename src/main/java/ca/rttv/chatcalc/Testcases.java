@@ -2,7 +2,7 @@ package ca.rttv.chatcalc;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.List;
@@ -67,7 +67,8 @@ public interface Testcases {
             new Pair<>("cmp(5;3)", 1.0d),
             new Pair<>("cmp(5;3;5)", 0.0d),
             new Pair<>("gcf(4;2)", 2.0d),
-            new Pair<>("lcm(6;9)", 18.0d)
+            new Pair<>("lcm(6;9)", 18.0d),
+            new Pair<>("1)+((2)", 3.0d)
     );
 
     static void test(List<Pair<String, Double>> list) {
@@ -75,14 +76,14 @@ public interface Testcases {
 
         for (Pair<String, Double> entry : list) {
             try {
-                double result = Config.makeEngine().eval(entry.getLeft(), new FunctionParameter[0]);
-                if (Math.abs(entry.getRight() - result) <= 0.000001) {
-                    client.player.sendMessage(Text.literal("§aTest case passed: " + entry.getLeft() + ", got " + entry.getRight()));
+                double result = Config.makeEngine().eval(entry.getFirst(), new FunctionParameter[0]);
+                if (Math.abs(entry.getSecond() - result) <= 0.000001) {
+                    client.player.sendMessage(Text.literal("§aTest case passed: " + entry.getFirst() + ", got " + entry.getSecond()));
                 } else {
-                    client.player.sendMessage(Text.literal("§cTest case §n§cfailed: " + entry.getLeft() + ", expected " + entry.getRight() + ", got " + result));
+                    client.player.sendMessage(Text.literal("§cTest case §n§cfailed: " + entry.getFirst() + ", expected " + entry.getSecond() + ", got " + result));
                 }
             } catch (Exception e) {
-                client.player.sendMessage(Text.literal("§cTest case failed with exception: " + entry.getLeft() + ", expected " + entry.getRight() + ", got " + e));
+                client.player.sendMessage(Text.literal("§cTest case failed with exception: " + entry.getFirst() + ", expected " + entry.getSecond() + ", got " + e));
             }
         }
     }

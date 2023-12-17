@@ -8,14 +8,18 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class ChatCalc {
-    public static final Pattern NUMBER = Pattern.compile("[-+]?(\\d,?)+(\\.\\d+)?");
+    public static final HashSet<String> CONSTANT_TABLE = new HashSet<>();
+    public static final HashSet<Pair<String, Integer>> FUNCTION_TABLE = new HashSet<>();
+    public static final Pattern NUMBER = Pattern.compile("[-+]?(\\d,?)*(\\.\\d+)?");
     public static final Pattern FUNCTION = Pattern.compile("[a-zA-Z]+\\(([a-zA-Z]+;)*?([a-zA-Z]+)\\)");
     public static final Pattern CONSTANT = Pattern.compile("[a-zA-Z]+");
     public static final String SEPARATOR = ";";
@@ -40,7 +44,7 @@ public class ChatCalc {
                         Optional<CustomFunction> left = either.get().left();
                         Optional<CustomConstant> right = either.get().right();
                         if (left.isPresent()) {
-                            Config.FUNCTIONS.put(left.get().name(), left.get());
+                            Config.FUNCTIONS.put(new Pair<>(left.get().name(), left.get().params().length), left.get());
                             Config.refreshJson();
                             return ChatHelper.replaceSection(field, "");
                         } else if (right.isPresent()) {
@@ -62,8 +66,9 @@ public class ChatCalc {
                         Optional<CustomFunction> left = either.get().left();
                         Optional<CustomConstant> right = either.get().right();
                         if (left.isPresent()) {
-                            if (Config.FUNCTIONS.containsKey(left.get().name())) {
-                                Config.FUNCTIONS.remove(left.get().name());
+                            Pair<String, Integer> pair = new Pair<>(left.get().name(), left.get().params().length);
+                            if (Config.FUNCTIONS.containsKey(pair)) {
+                                Config.FUNCTIONS.remove(pair);
                                 Config.refreshJson();
                                 return ChatHelper.replaceSection(field, "");
                             }
@@ -101,11 +106,13 @@ public class ChatCalc {
             }
             try {
                 long start = System.nanoTime();
+                CONSTANT_TABLE.clear();
+                FUNCTION_TABLE.clear();
                 double result = Config.makeEngine().eval(text, new FunctionParameter[0]);
-                double us = (System.nanoTime() - start) / 1_000.0;
+                double micros = (System.nanoTime() - start) / 1_000.0;
                 if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + us + "µs to parse equation"), true);
-                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + us + "µs to parse equation"), false);
+                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + micros + "µs to parse equation"), true);
+                    MinecraftClient.getInstance().player.sendMessage(Text.literal("Took " + micros + "µs to parse equation"), false);
                 }
                 String solution = Config.getDecimalFormat().format(result); // so fast that creating a new one everytime doesn't matter, also lets me use fields
                 if (solution.equals("-0")) {
